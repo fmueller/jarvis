@@ -10,8 +10,8 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
 import com.github.fmueller.jarvis.MyBundle
 import com.github.fmueller.jarvis.services.MyProjectService
+import com.github.fmueller.jarvis.services.OllamaService
 import javax.swing.JButton
-
 
 class MyToolWindowFactory : ToolWindowFactory {
 
@@ -29,6 +29,7 @@ class MyToolWindowFactory : ToolWindowFactory {
 
     class MyToolWindow(toolWindow: ToolWindow) {
 
+        private val ollama = toolWindow.project.service<OllamaService>()
         private val service = toolWindow.project.service<MyProjectService>()
 
         fun getContent() = JBPanel<JBPanel<*>>().apply {
