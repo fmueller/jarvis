@@ -9,6 +9,6 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.fmueller.jarvis.toolWindow.ConversationWindowFactory" id="JarvisConversationWindow"/>
+        <toolWindow factoryClass="com.github.fmueller.jarvis.toolWindow.ConversationWindowFactory" id="Jarvis"/>
     </extensions>
 </idea-plugin>
