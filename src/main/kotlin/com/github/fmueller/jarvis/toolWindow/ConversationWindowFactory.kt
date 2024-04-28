@@ -1,16 +1,16 @@
 package com.github.fmueller.jarvis.toolWindow
 
-import com.github.fmueller.jarvis.MyBundle
-import com.github.fmueller.jarvis.services.MyProjectService
 import com.github.fmueller.jarvis.services.OllamaService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBPanel
+import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.content.ContentFactory
-import javax.swing.JButton
+import com.intellij.util.ui.components.BorderLayoutPanel
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 
 class ConversationWindowFactory : ToolWindowFactory {
 
@@ -24,17 +24,27 @@ class ConversationWindowFactory : ToolWindowFactory {
 
     class ConversationWindow(toolWindow: ToolWindow) {
 
-        private val ollama = toolWindow.project.service<OllamaService>()
-        private val service = toolWindow.project.service<MyProjectService>()
+        private val project = toolWindow.project
+        private val ollama = project.service<OllamaService>()
 
-        fun getContent() = JBPanel<JBPanel<*>>().apply {
-            val label = JBLabel(MyBundle.message("randomLabel", "?"))
+        fun getContent() = BorderLayoutPanel().apply {
+            val label =
+                JBLabel("I am Jarvis, your personal coding assistant. I try to be helpful, but I am not perfect.")
+            val responseArea = JBTextArea()
 
-            add(label)
-            add(JButton(MyBundle.message("shuffle")).apply {
-                addActionListener {
-                    label.text = MyBundle.message("randomLabel", service.getRandomNumber())
-                }
+            addToTop(label)
+            addToCenter(responseArea)
+            addToBottom(JBTextArea().apply {
+                text = "Please enter your question"
+                addKeyListener(object : KeyAdapter() {
+                    override fun keyPressed(e: KeyEvent) {
+                        if (e.keyCode == KeyEvent.VK_ENTER) {
+                            val question = text
+                            text = ""
+                            responseArea.text = ollama.ask(question)
+                        }
+                    }
+                })
             })
         }
     }

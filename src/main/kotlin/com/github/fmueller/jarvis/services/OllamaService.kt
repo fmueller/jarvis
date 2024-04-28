@@ -40,6 +40,41 @@ class OllamaService : Disposable {
         }
     }
 
+    // TODO make it non-blocking
+    fun ask(question: String): String = runBlocking {
+        // TODO check if model is available
+        // TODO if not download model
+        try {
+            val client = HttpClient.newHttpClient()
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:11434/api/chat"))
+                .POST(
+                    HttpRequest.BodyPublishers.ofString(
+                        """
+                    {
+                      "model": "llama3",
+                      "messages": [
+                        {
+                          "role": "user",
+                          "content": "$question"
+                        }
+                      ],
+                      "stream": false
+                    }
+                """.trimIndent()
+                    )
+                )
+                .build()
+
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val body = response.body()
+            thisLogger().warn("Response: $body")
+            body
+        } catch (e: Exception) {
+            "Error: ${e.message}"
+        }
+    }
+
     override fun dispose() {
         process.stop()
     }
