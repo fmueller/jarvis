@@ -16,13 +16,11 @@ import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
-import com.vladsch.flexmark.util.misc.Extension
 import java.awt.*
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
-import java.util.*
 import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
@@ -112,7 +110,7 @@ class ConversationWindowFactory : ToolWindowFactory {
             val options = MutableDataSet()
             options.set(
                 Parser.EXTENSIONS,
-                Arrays.asList(TablesExtension.create(), StrikethroughExtension.create()) as Collection<Extension>
+                listOf(TablesExtension.create(), StrikethroughExtension.create())
             )
             options.set(HtmlRenderer.SOFT_BREAK, "<br />\n")
             val parser: Parser = Parser.builder(options).build()
