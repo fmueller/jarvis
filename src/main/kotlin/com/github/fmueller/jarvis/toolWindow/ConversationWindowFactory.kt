@@ -6,18 +6,25 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.JBColor
-import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.content.ContentFactory
+import com.intellij.util.ui.HTMLEditorKitBuilder
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.components.BorderLayoutPanel
+import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
+import com.vladsch.flexmark.ext.tables.TablesExtension
+import com.vladsch.flexmark.html.HtmlRenderer
+import com.vladsch.flexmark.parser.Parser
+import com.vladsch.flexmark.util.data.MutableDataSet
+import com.vladsch.flexmark.util.misc.Extension
 import java.awt.*
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
+import java.util.*
 import javax.swing.BorderFactory
+import javax.swing.JEditorPane
 import javax.swing.JPanel
 import javax.swing.UIManager
 import javax.swing.border.AbstractBorder
@@ -38,9 +45,19 @@ class ConversationWindowFactory : ToolWindowFactory {
         private val ollama = project.service<OllamaService>()
 
         fun getContent() = BorderLayoutPanel().apply {
-            val label =
-                JBLabel("I am Jarvis, your personal coding assistant. I try to be helpful, but I am not perfect.")
-            val responseArea = JBTextArea()
+
+            val conversationPanel = JEditorPane().apply {
+                editorKit = HTMLEditorKitBuilder.simple()
+                text = markdownToHtml(
+                    """
+                    ## Hello!
+
+                    I am Jarvis, your personal coding assistant. I try to be helpful, but I am not perfect.
+                    """.trimIndent()
+                )
+                isEditable = false
+            }
+
             var borderColor = JBColor.GRAY
             val inputArea = JBTextArea().apply {
                 lineWrap = true
@@ -76,16 +93,12 @@ class ConversationWindowFactory : ToolWindowFactory {
                     if (e.keyCode == KeyEvent.VK_ENTER) {
                         val question = inputArea.text
                         inputArea.text = ""
-                        responseArea.text = ollama.ask(question)
+                        conversationPanel.text = markdownToHtml(ollama.ask(question))
                     }
                 }
             })
 
-            addToTop(label)
-
-            addToCenter(JBScrollPane(responseArea).apply {
-                border = BorderFactory.createTitledBorder("Messages")
-            })
+            addToCenter(conversationPanel)
 
             addToBottom(BorderLayoutPanel().apply {
                 addToCenter(JPanel(BorderLayout()).apply {
@@ -93,6 +106,17 @@ class ConversationWindowFactory : ToolWindowFactory {
                     add(inputArea, BorderLayout.CENTER)
                 })
             })
+        }
+
+        private fun markdownToHtml(text: String) = run {
+            val options = MutableDataSet()
+            options.set(
+                Parser.EXTENSIONS,
+                Arrays.asList(TablesExtension.create(), StrikethroughExtension.create()) as Collection<Extension>
+            )
+            options.set(HtmlRenderer.SOFT_BREAK, "<br />\n")
+            val parser: Parser = Parser.builder(options).build()
+            HtmlRenderer.builder(options).build().render(parser.parse(text))
         }
     }
 }
