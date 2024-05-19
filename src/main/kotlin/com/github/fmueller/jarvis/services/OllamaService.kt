@@ -1,5 +1,6 @@
 package com.github.fmueller.jarvis.services
 
+import com.github.fmueller.jarvis.conversation.Conversation
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -18,17 +19,17 @@ import java.net.http.HttpResponse
 import java.util.*
 
 @Serializable
-private data class Message(val role: String, val content: String)
+private data class ChatMessage(val role: String, val content: String)
 
 @Serializable
 private data class ChatRequest(
     val model: String,
-    val messages: List<Message>,
+    val messages: List<ChatMessage>,
     val stream: Boolean
 )
 
 @Serializable
-private data class ChatResponse(val message: Message)
+private data class ChatResponse(val message: ChatMessage)
 
 @Service(Service.Level.PROJECT)
 class OllamaService : Disposable {
@@ -59,12 +60,16 @@ class OllamaService : Disposable {
         }
     }
 
-    suspend fun ask(question: String): String = withContext(Dispatchers.IO) {
+    suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
         // TODO check if model is available
         // TODO if not download model
         try {
             val client = HttpClient.newHttpClient()
-            val chatRequest = ChatRequest("llama3", listOf(Message("user", question)), false)
+            val chatRequest = ChatRequest(
+                "llama3",
+                conversation.getMessages().map { ChatMessage(it.role.toString().lowercase(), it.content) },
+                false
+            )
             val httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:11434/api/chat"))
                 .POST(HttpRequest.BodyPublishers.ofString(Json.encodeToString(chatRequest)))

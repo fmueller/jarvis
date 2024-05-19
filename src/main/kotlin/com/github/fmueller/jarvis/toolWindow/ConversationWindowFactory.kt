@@ -111,13 +111,12 @@ class ConversationWindowFactory : ToolWindowFactory {
                             inputArea.append("\n")
                         } else {
                             val question = inputArea.text.trim()
-                            conversation.addMessage(Message(Role.USER, question))
-
                             inputArea.text = ""
                             inputArea.isEnabled = false
+                            conversation.addMessage(Message(Role.USER, question))
 
                             GlobalScope.launch(Dispatchers.EDT) {
-                                val answer = ollama.ask(question)
+                                val answer = ollama.chat(conversation)
                                 conversation.addMessage(Message(Role.ASSISTANT, answer))
 
                                 inputArea.isEnabled = true
