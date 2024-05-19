@@ -67,7 +67,21 @@ class OllamaService : Disposable {
             val client = HttpClient.newHttpClient()
             val chatRequest = ChatRequest(
                 "llama3",
-                conversation.getMessages().map { ChatMessage(it.role.toString().lowercase(), it.content) },
+                listOf(
+                    ChatMessage(
+                        "system",
+                        """
+                        You are Jarvis.
+                        Jarvis is a helpful coding assistant.
+                        Jarvis is on the level of an expert software developer.
+                        Jarvis asks clarifying questions to understand the user's problem if he doesn't have enough information.
+                        Jarvis is running in the IDE of a software developer.
+                        Jarvis has access to code the software developer is working on.
+                        Jarvis formats responses in Markdown.
+                        Jarvis uses paragraphs, lists, and code blocks to make his responses more readable.
+                        """.trimIndent()
+                    )
+                ) + conversation.getMessages().map { ChatMessage(it.role.toString().lowercase(), it.content) },
                 false
             )
             val httpRequest = HttpRequest.newBuilder()
