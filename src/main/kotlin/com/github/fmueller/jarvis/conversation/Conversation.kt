@@ -18,7 +18,7 @@ class Conversation {
     fun addMessage(message: Message) {
         val oldMessages = ArrayList(messages)
         messages.add(message)
-        propertyChangeSupport.firePropertyChange("message", oldMessages, ArrayList(messages))
+        propertyChangeSupport.firePropertyChange("messages", oldMessages, ArrayList(messages))
     }
 
     fun getMessages() = messages.toList()

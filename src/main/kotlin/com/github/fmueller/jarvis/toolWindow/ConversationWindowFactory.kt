@@ -63,7 +63,7 @@ class ConversationWindowFactory : ToolWindowFactory {
 
         init {
             conversation.addPropertyChangeListener {
-                if (it.propertyName == "message") {
+                if (it.propertyName == "messages") {
                     val messages = conversation.getMessages()
                     SwingUtilities.invokeLater {
                         conversationPanel.text =
