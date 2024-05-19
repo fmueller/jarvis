@@ -1,6 +1,7 @@
 package com.github.fmueller.jarvis.toolWindow
 
 import com.github.fmueller.jarvis.conversation.Conversation
+import com.github.fmueller.jarvis.conversation.ConversationPanel
 import com.github.fmueller.jarvis.conversation.Message
 import com.github.fmueller.jarvis.conversation.Role
 import com.github.fmueller.jarvis.services.OllamaService
@@ -13,14 +14,8 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.content.ContentFactory
-import com.intellij.util.ui.HTMLEditorKitBuilder
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.components.BorderLayoutPanel
-import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
-import com.vladsch.flexmark.ext.tables.TablesExtension
-import com.vladsch.flexmark.html.HtmlRenderer
-import com.vladsch.flexmark.parser.Parser
-import com.vladsch.flexmark.util.data.MutableDataSet
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -30,7 +25,10 @@ import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
-import javax.swing.*
+import javax.swing.BorderFactory
+import javax.swing.JPanel
+import javax.swing.SwingUtilities
+import javax.swing.UIManager
 import javax.swing.border.AbstractBorder
 
 class ConversationWindowFactory : ToolWindowFactory {
@@ -47,30 +45,21 @@ class ConversationWindowFactory : ToolWindowFactory {
 
         private val project = toolWindow.project
         private val ollama = project.service<OllamaService>()
+
+        // TODO conversationPanel should have a reference to the conversation and register the property change listener
         private val conversation = Conversation()
-
-        private val conversationPanel = JEditorPane().apply {
-            editorKit = HTMLEditorKitBuilder.simple()
-            text = markdownToHtml(
-                """
-                    ## Hello!
-
-                    I am Jarvis, your personal coding assistant. I try to be helpful, but I am not perfect.
-                    """.trimIndent()
-            )
-            isEditable = false
-        }
+        private val conversationPanel = ConversationPanel()
 
         init {
             conversation.addPropertyChangeListener {
                 if (it.propertyName == "messages") {
-                    val messages = conversation.getMessages()
                     SwingUtilities.invokeLater {
-                        conversationPanel.text =
-                            markdownToHtml(messages.joinToString("\n") { "**" + it.role.toString() + "**\n" + it.content })
+                        conversationPanel.update(conversation)
                     }
                 }
             }
+
+            conversation.addMessage(Message(Role.ASSISTANT, "Hello! How can I help you?"))
         }
 
         @OptIn(DelicateCoroutinesApi::class)
@@ -123,7 +112,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                             conversation.addMessage(Message(Role.USER, question))
 
                             GlobalScope.launch(Dispatchers.EDT) {
-                                val answer = ollama.chat(conversation)
+                                val answer = ollama.chat(conversation).trim()
                                 conversation.addMessage(Message(Role.ASSISTANT, answer))
 
                                 inputArea.isEnabled = true
@@ -134,25 +123,16 @@ class ConversationWindowFactory : ToolWindowFactory {
                 }
             })
 
-            addToCenter(JBScrollPane(conversationPanel))
+            addToCenter(JBScrollPane(conversationPanel).apply {
+                horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+            })
 
             addToBottom(BorderLayoutPanel().apply {
                 addToCenter(JPanel(BorderLayout()).apply {
-                    border = BorderFactory.createEmptyBorder(4, 4, 4, 4) // Margin
+                    border = BorderFactory.createEmptyBorder(4, 4, 4, 4)
                     add(inputArea, BorderLayout.CENTER)
                 })
             })
-        }
-
-        private fun markdownToHtml(text: String) = run {
-            val options = MutableDataSet()
-            options.set(
-                Parser.EXTENSIONS,
-                listOf(TablesExtension.create(), StrikethroughExtension.create())
-            )
-            options.set(HtmlRenderer.SOFT_BREAK, "<br />")
-            val parser: Parser = Parser.builder(options).build()
-            HtmlRenderer.builder(options).build().render(parser.parse(text))
         }
     }
 }
