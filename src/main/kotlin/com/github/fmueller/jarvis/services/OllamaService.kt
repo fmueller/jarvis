@@ -80,7 +80,7 @@ class OllamaService : Disposable {
                         You use paragraphs, lists, and code blocks to make your responses more readable.
                         """.trimIndent()
                     )
-                ) + conversation.getMessages().map { ChatMessage(it.role.toString().lowercase(), it.content) },
+                ) + conversation.getMessages().map { ChatMessage(it.role.toString(), it.content) },
                 false
             )
             val httpRequest = HttpRequest.newBuilder()

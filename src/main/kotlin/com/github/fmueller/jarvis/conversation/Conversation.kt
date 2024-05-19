@@ -5,7 +5,11 @@ import java.beans.PropertyChangeSupport
 import java.time.LocalDateTime
 
 enum class Role {
-    ASSISTANT, USER
+
+    ASSISTANT,
+    USER;
+
+    override fun toString() = name.lowercase()
 }
 
 data class Message(val role: Role, val content: String, val createdAt: LocalDateTime = LocalDateTime.now())
