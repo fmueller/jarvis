@@ -4,6 +4,7 @@ import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.Message
 import com.github.fmueller.jarvis.conversation.Role
 import com.github.fmueller.jarvis.services.OllamaService
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
@@ -19,6 +20,10 @@ import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.awt.*
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
@@ -67,6 +72,7 @@ class ConversationWindowFactory : ToolWindowFactory {
             }
         }
 
+        @OptIn(DelicateCoroutinesApi::class)
         fun getContent() = BorderLayoutPanel().apply {
             var borderColor = JBColor.GRAY
             val inputArea = JBTextArea().apply {
@@ -106,8 +112,10 @@ class ConversationWindowFactory : ToolWindowFactory {
 
                         inputArea.text = ""
 
-                        val answer = ollama.ask(question)
-                        conversation.addMessage(Message(Role.ASSISTANT, answer))
+                        GlobalScope.launch(Dispatchers.EDT) {
+                            val answer = ollama.ask(question)
+                            conversation.addMessage(Message(Role.ASSISTANT, answer))
+                        }
                     }
                 }
             })

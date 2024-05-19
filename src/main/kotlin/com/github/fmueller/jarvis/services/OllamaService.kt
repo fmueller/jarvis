@@ -3,8 +3,10 @@ package com.github.fmueller.jarvis.services
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -49,8 +51,7 @@ class OllamaService : Disposable {
         }
     }
 
-    // TODO make it non-blocking
-    fun ask(question: String): String = runBlocking {
+    suspend fun ask(question: String): String = withContext(Dispatchers.IO) {
         // TODO check if model is available
         // TODO if not download model
         try {
