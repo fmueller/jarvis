@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.http.HttpClient
@@ -17,10 +18,17 @@ import java.net.http.HttpResponse
 import java.util.*
 
 @Serializable
-private data class Response(val message: Message)
+private data class Message(val role: String, val content: String)
 
 @Serializable
-private data class Message(val role: String, val content: String)
+private data class ChatRequest(
+    val model: String,
+    val messages: List<Message>,
+    val stream: Boolean
+)
+
+@Serializable
+private data class ChatResponse(val message: Message)
 
 @Service(Service.Level.PROJECT)
 class OllamaService : Disposable {
@@ -56,29 +64,15 @@ class OllamaService : Disposable {
         // TODO if not download model
         try {
             val client = HttpClient.newHttpClient()
-            val request = HttpRequest.newBuilder()
+            val chatRequest = ChatRequest("llama3", listOf(Message("user", question)), false)
+            val httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:11434/api/chat"))
-                .POST(
-                    HttpRequest.BodyPublishers.ofString(
-                        """
-                    {
-                      "model": "llama3",
-                      "messages": [
-                        {
-                          "role": "user",
-                          "content": "$question"
-                        }
-                      ],
-                      "stream": false
-                    }
-                """.trimIndent()
-                    )
-                )
+                .POST(HttpRequest.BodyPublishers.ofString(Json.encodeToString(chatRequest)))
                 .build()
 
-            val httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString())
             val json = Json { ignoreUnknownKeys = true }
-            val response = json.decodeFromString<Response>(httpResponse.body())
+            val response = json.decodeFromString<ChatResponse>(httpResponse.body())
             response.message.content
         } catch (e: Exception) {
             "Error: ${e.message}"

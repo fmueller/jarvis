@@ -105,16 +105,24 @@ class ConversationWindowFactory : ToolWindowFactory {
                 }
             })
             inputArea.addKeyListener(object : KeyAdapter() {
-                override fun keyPressed(e: KeyEvent) {
+                override fun keyReleased(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ENTER) {
-                        val question = inputArea.text
-                        conversation.addMessage(Message(Role.USER, question))
+                        if (e.isShiftDown) {
+                            inputArea.append("\n")
+                        } else {
+                            val question = inputArea.text.trim()
+                            conversation.addMessage(Message(Role.USER, question))
 
-                        inputArea.text = ""
+                            inputArea.text = ""
+                            inputArea.isEnabled = false
 
-                        GlobalScope.launch(Dispatchers.EDT) {
-                            val answer = ollama.ask(question)
-                            conversation.addMessage(Message(Role.ASSISTANT, answer))
+                            GlobalScope.launch(Dispatchers.EDT) {
+                                val answer = ollama.ask(question)
+                                conversation.addMessage(Message(Role.ASSISTANT, answer))
+
+                                inputArea.isEnabled = true
+                                inputArea.requestFocusInWindow()
+                            }
                         }
                     }
                 }
