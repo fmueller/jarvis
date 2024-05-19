@@ -1,5 +1,8 @@
 package com.github.fmueller.jarvis.toolWindow
 
+import com.github.fmueller.jarvis.conversation.Conversation
+import com.github.fmueller.jarvis.conversation.Message
+import com.github.fmueller.jarvis.conversation.Role
 import com.github.fmueller.jarvis.services.OllamaService
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -21,10 +24,7 @@ import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
-import javax.swing.BorderFactory
-import javax.swing.JEditorPane
-import javax.swing.JPanel
-import javax.swing.UIManager
+import javax.swing.*
 import javax.swing.border.AbstractBorder
 
 class ConversationWindowFactory : ToolWindowFactory {
@@ -41,21 +41,33 @@ class ConversationWindowFactory : ToolWindowFactory {
 
         private val project = toolWindow.project
         private val ollama = project.service<OllamaService>()
+        private val conversation = Conversation()
 
-        fun getContent() = BorderLayoutPanel().apply {
-
-            val conversationPanel = JEditorPane().apply {
-                editorKit = HTMLEditorKitBuilder.simple()
-                text = markdownToHtml(
-                    """
+        private val conversationPanel = JEditorPane().apply {
+            editorKit = HTMLEditorKitBuilder.simple()
+            text = markdownToHtml(
+                """
                     ## Hello!
 
                     I am Jarvis, your personal coding assistant. I try to be helpful, but I am not perfect.
                     """.trimIndent()
-                )
-                isEditable = false
-            }
+            )
+            isEditable = false
+        }
 
+        init {
+            conversation.addPropertyChangeListener {
+                if (it.propertyName == "message") {
+                    val messages = conversation.getMessages()
+                    SwingUtilities.invokeLater {
+                        conversationPanel.text =
+                            markdownToHtml(messages.joinToString("\n") { "**" + it.role.toString() + "**\n" + it.content })
+                    }
+                }
+            }
+        }
+
+        fun getContent() = BorderLayoutPanel().apply {
             var borderColor = JBColor.GRAY
             val inputArea = JBTextArea().apply {
                 lineWrap = true
@@ -90,8 +102,12 @@ class ConversationWindowFactory : ToolWindowFactory {
                 override fun keyPressed(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ENTER) {
                         val question = inputArea.text
+                        conversation.addMessage(Message(Role.USER, question))
+
                         inputArea.text = ""
-                        conversationPanel.text = markdownToHtml(ollama.ask(question))
+
+                        val answer = ollama.ask(question)
+                        conversation.addMessage(Message(Role.ASSISTANT, answer))
                     }
                 }
             })
@@ -112,7 +128,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                 Parser.EXTENSIONS,
                 listOf(TablesExtension.create(), StrikethroughExtension.create())
             )
-            options.set(HtmlRenderer.SOFT_BREAK, "<br />\n")
+            options.set(HtmlRenderer.SOFT_BREAK, "<br />")
             val parser: Parser = Parser.builder(options).build()
             HtmlRenderer.builder(options).build().render(parser.parse(text))
         }

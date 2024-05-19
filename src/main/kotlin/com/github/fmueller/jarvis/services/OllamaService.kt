@@ -5,11 +5,20 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.*
+
+@Serializable
+private data class Response(val message: Message)
+
+@Serializable
+private data class Message(val role: String, val content: String)
 
 @Service(Service.Level.PROJECT)
 class OllamaService : Disposable {
@@ -66,10 +75,10 @@ class OllamaService : Disposable {
                 )
                 .build()
 
-            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            val body = response.body()
-            thisLogger().warn("Response: $body")
-            body
+            val httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val json = Json { ignoreUnknownKeys = true }
+            val response = json.decodeFromString<Response>(httpResponse.body())
+            response.message.content
         } catch (e: Exception) {
             "Error: ${e.message}"
         }
