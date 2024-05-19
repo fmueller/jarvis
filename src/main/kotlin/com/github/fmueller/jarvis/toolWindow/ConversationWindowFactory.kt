@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.content.ContentFactory
 import com.intellij.util.ui.HTMLEditorKitBuilder
@@ -133,7 +134,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                 }
             })
 
-            addToCenter(conversationPanel)
+            addToCenter(JBScrollPane(conversationPanel))
 
             addToBottom(BorderLayoutPanel().apply {
                 addToCenter(JPanel(BorderLayout()).apply {
