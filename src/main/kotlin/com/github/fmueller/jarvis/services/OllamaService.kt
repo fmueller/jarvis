@@ -70,6 +70,8 @@ class OllamaService : Disposable {
                 listOf(
                     ChatMessage(
                         "system",
+                        // TODO is it better to reference the assistant by name or role?
+                        // TODO should I add something about putting the language identifier in the code block?
                         """
                         You are Jarvis.
                         You are a helpful coding assistant on the level of an expert software developer.

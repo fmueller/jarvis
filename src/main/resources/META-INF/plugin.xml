@@ -9,6 +9,9 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
+
+        <highlightErrorFilter implementation="com.github.fmueller.jarvis.IgnoreCodeErrorsFilter"/>
+        <daemon.highlightInfoFilter implementation="com.github.fmueller.jarvis.IgnoreCodeErrorsFilter"/>
         <toolWindow factoryClass="com.github.fmueller.jarvis.toolWindow.ConversationWindowFactory" id="Jarvis"/>
     </extensions>
 </idea-plugin>

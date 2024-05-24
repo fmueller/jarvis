@@ -48,7 +48,7 @@ class ConversationWindowFactory : ToolWindowFactory {
 
         // TODO conversationPanel should have a reference to the conversation and register the property change listener
         private val conversation = Conversation()
-        private val conversationPanel = ConversationPanel()
+        private val conversationPanel = ConversationPanel(project)
 
         init {
             conversation.addPropertyChangeListener {
@@ -65,6 +65,7 @@ class ConversationWindowFactory : ToolWindowFactory {
         @OptIn(DelicateCoroutinesApi::class)
         fun getContent() = BorderLayoutPanel().apply {
             var borderColor = JBColor.GRAY
+            // TODO extract input area to a separate class and add placeholder text
             val inputArea = JBTextArea().apply {
                 lineWrap = true
                 wrapStyleWord = true
@@ -112,6 +113,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                             conversation.addMessage(Message(Role.USER, question))
 
                             GlobalScope.launch(Dispatchers.EDT) {
+                                // TODO add conversation service and run simple pipeline for slash command detection
                                 val answer = ollama.chat(conversation).trim()
                                 conversation.addMessage(Message(Role.ASSISTANT, answer))
 

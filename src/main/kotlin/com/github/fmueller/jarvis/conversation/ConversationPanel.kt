@@ -1,19 +1,13 @@
 package com.github.fmueller.jarvis.conversation
 
-import com.intellij.util.ui.HTMLEditorKitBuilder
+import com.intellij.openapi.project.Project
 import com.intellij.util.ui.UIUtil
-import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
-import com.vladsch.flexmark.ext.tables.TablesExtension
-import com.vladsch.flexmark.html.HtmlRenderer
-import com.vladsch.flexmark.parser.Parser
-import com.vladsch.flexmark.util.data.MutableDataSet
 import org.jdesktop.swingx.VerticalLayout
 import java.awt.Color
 import javax.swing.BorderFactory
-import javax.swing.JEditorPane
 import javax.swing.JPanel
 
-class ConversationPanel : JPanel() {
+class ConversationPanel(private val project: Project) : JPanel() {
 
     private val assistantBgColor = UIUtil.getPanelBackground().darker(0.95)
     private val userBgColor = UIUtil.getPanelBackground().darker(0.85)
@@ -27,27 +21,16 @@ class ConversationPanel : JPanel() {
     fun update(conversation: Conversation) {
         removeAll()
         conversation.getMessages().forEach { m ->
-            add(JEditorPane().apply {
-                editorKit = HTMLEditorKitBuilder.simple()
-                text = markdownToHtml("**${if (m.role == Role.ASSISTANT) "Jarvis" else "You"}**\n\n${m.content}")
-                isEditable = false
-                background = if (m.role == Role.ASSISTANT) assistantBgColor else userBgColor
-                border = BorderFactory.createEmptyBorder(5, 5, 10, 5)
+            // TODO use label in MarkdownContentPanel to show the role
+            val markdown = "**${if (m.role == Role.ASSISTANT) "Jarvis" else "You"}**\n\n${m.content}"
+            val bgColor = if (m.role == Role.ASSISTANT) assistantBgColor else userBgColor
+            add(MarkdownContentPanel(project, markdown, bgColor).apply {
+                border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
             })
         }
+        // TODO scroll to the bottom
         revalidate()
         repaint()
-    }
-
-    private fun markdownToHtml(text: String): String {
-        val options = MutableDataSet()
-        options.set(
-            Parser.EXTENSIONS,
-            listOf(TablesExtension.create(), StrikethroughExtension.create())
-        )
-        options.set(HtmlRenderer.SOFT_BREAK, "<br />")
-        val parser: Parser = Parser.builder(options).build()
-        return HtmlRenderer.builder(options).build().render(parser.parse(text))
     }
 
     private fun Color.darker(factor: Double): Color {
