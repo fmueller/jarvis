@@ -28,7 +28,6 @@ class ConversationPanel(private val project: Project) : JPanel() {
                 border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
             })
         }
-        // TODO scroll to the bottom
         revalidate()
         repaint()
     }

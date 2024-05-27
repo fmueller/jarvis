@@ -21,10 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.awt.*
-import java.awt.event.FocusEvent
-import java.awt.event.FocusListener
-import java.awt.event.KeyAdapter
-import java.awt.event.KeyEvent
+import java.awt.event.*
 import javax.swing.BorderFactory
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
@@ -49,11 +46,33 @@ class ConversationWindowFactory : ToolWindowFactory {
         // TODO conversationPanel should have a reference to the conversation and register the property change listener
         private val conversation = Conversation()
         private val conversationPanel = ConversationPanel(project)
+        private val scrollableConversationPanel = JBScrollPane(conversationPanel).apply {
+            horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        }
 
         init {
+            var isUserScrolling = false
+
+            scrollableConversationPanel.verticalScrollBar.addAdjustmentListener { e ->
+                if (!isUserScrolling) {
+                    e.adjustable.value = e.adjustable.maximum
+                }
+            }
+
+            scrollableConversationPanel.addMouseListener(object : MouseAdapter() {
+                override fun mousePressed(e: MouseEvent?) {
+                    isUserScrolling = true
+                }
+            })
+
+            scrollableConversationPanel.addMouseWheelListener {
+                isUserScrolling = true
+            }
+
             conversation.addPropertyChangeListener {
                 if (it.propertyName == "messages") {
                     SwingUtilities.invokeLater {
+                        isUserScrolling = false
                         conversationPanel.update(conversation)
                     }
                 }
@@ -125,9 +144,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                 }
             })
 
-            addToCenter(JBScrollPane(conversationPanel).apply {
-                horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-            })
+            addToCenter(scrollableConversationPanel)
 
             addToBottom(BorderLayoutPanel().apply {
                 addToCenter(JPanel(BorderLayout()).apply {
