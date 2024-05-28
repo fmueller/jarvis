@@ -2,6 +2,7 @@ package com.github.fmueller.jarvis.conversation;
 
 import com.github.fmueller.jarvis.conversation.ColorHelper.darker
 import com.intellij.openapi.project.Project
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.HTMLEditorKitBuilder
 import com.intellij.util.ui.UIUtil
@@ -11,6 +12,7 @@ import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import org.jdesktop.swingx.VerticalLayout
+import java.awt.Font
 import java.util.*
 import java.util.regex.Pattern
 import javax.swing.BorderFactory
@@ -29,13 +31,15 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
     private val bgColor = if (message.role == Role.ASSISTANT) assistantBgColor else userBgColor
 
     init {
-        // TODO use label in MarkdownContentPanel to show the role
         background = bgColor
         layout = VerticalLayout(5)
         border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
 
-        val markdown = "**${if (message.role == Role.ASSISTANT) "Jarvis" else "You"}**\n\n${message.content}"
-        parseAndRenderMarkdown(markdown)
+        add(JBLabel(if (message.role == Role.ASSISTANT) "Jarvis" else "You").apply {
+            font = font.deriveFont(Font.BOLD)
+            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        })
+        parseAndRenderMarkdown(message.content)
     }
 
     // TODO add some tests for the parsing logic
@@ -71,6 +75,7 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
             text = markdownToHtml(markdown)
             isEditable = false
             background = bgColor
+            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         }
         add(editorPane)
     }
@@ -80,7 +85,9 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
         val editor = syntaxHelper.getHighlightedEditor(languageId, code)
         if (editor != null) {
             editor.contentComponent.border = BorderFactory.createEmptyBorder(5, 5, 5, 5)
-            add(JBScrollPane(editor.component))
+            add(JBScrollPane(editor.component).apply {
+                border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+            })
         } else {
             addNonCodeContent(code)
         }
