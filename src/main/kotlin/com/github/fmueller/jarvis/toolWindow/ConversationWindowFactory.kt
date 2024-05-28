@@ -47,6 +47,7 @@ class ConversationWindowFactory : ToolWindowFactory {
         private val conversation = Conversation()
         private val conversationPanel = ConversationPanel(project)
         private val scrollableConversationPanel = JBScrollPane(conversationPanel).apply {
+            verticalScrollBarPolicy = JBScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
             horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         }
 
