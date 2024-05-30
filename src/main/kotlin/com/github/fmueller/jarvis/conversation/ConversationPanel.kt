@@ -10,7 +10,7 @@ import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-class ConversationPanel(private val conversation: Conversation, private val project: Project) {
+class ConversationPanel(conversation: Conversation, private val project: Project) {
 
     private val panel = JPanel().apply {
         layout = VerticalLayout(1)
@@ -47,7 +47,7 @@ class ConversationPanel(private val conversation: Conversation, private val proj
             if (it.propertyName == "messages") {
                 SwingUtilities.invokeLater {
                     isUserScrolling = false
-                    update(conversation)
+                    update(it.newValue as List<Message>)
                 }
             }
         }
@@ -56,9 +56,9 @@ class ConversationPanel(private val conversation: Conversation, private val proj
     }
 
     // TODO recalculate colors on theme change and don't set darker panel background for bright themes
-    private fun update(conversation: Conversation) {
+    private fun update(messages: List<Message>) {
         panel.removeAll()
-        conversation.getMessages().forEach { message ->
+        messages.forEach { message ->
             panel.add(MessagePanel(message, project))
         }
         panel.revalidate()

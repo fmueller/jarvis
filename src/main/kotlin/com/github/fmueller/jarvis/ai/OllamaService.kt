@@ -1,6 +1,6 @@
 package com.github.fmueller.jarvis.ai
 
-import com.github.fmueller.jarvis.conversation.Conversation
+import com.github.fmueller.jarvis.conversation.Message
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -61,7 +61,7 @@ class OllamaService : Disposable {
         }
     }
 
-    suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
+    suspend fun chat(messages: List<Message>): String = withContext(Dispatchers.IO) {
         // TODO check if model is available
         // TODO if not download model
         try {
@@ -83,7 +83,7 @@ class OllamaService : Disposable {
                         You use paragraphs, lists, and code blocks to make your responses more readable.
                         """.trimIndent()
                     )
-                ) + conversation.getMessages().map { ChatMessage(it.role.toString(), it.content) },
+                ) + messages.map { ChatMessage(it.role.toString(), it.content) },
                 false
             )
             val httpRequest = HttpRequest.newBuilder()

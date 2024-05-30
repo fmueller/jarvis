@@ -1,7 +1,9 @@
 package com.github.fmueller.jarvis.toolWindow
 
 import com.github.fmueller.jarvis.ai.OllamaService
-import com.github.fmueller.jarvis.conversation.*
+import com.github.fmueller.jarvis.conversation.Conversation
+import com.github.fmueller.jarvis.conversation.ConversationPanel
+import com.github.fmueller.jarvis.conversation.InputArea
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -31,11 +33,8 @@ class ConversationWindowFactory : ToolWindowFactory {
 
     class ConversationWindow(toolWindow: ToolWindow) {
 
-        private val project = toolWindow.project
-        private val ollama = project.service<OllamaService>()
-
-        private val conversation = Conversation()
-        private val conversationPanel = ConversationPanel(conversation, project)
+        private val conversation = Conversation(toolWindow.project.service<OllamaService>())
+        private val conversationPanel = ConversationPanel(conversation, toolWindow.project)
 
         @OptIn(DelicateCoroutinesApi::class)
         fun getContent() = BorderLayoutPanel().apply {
@@ -45,16 +44,13 @@ class ConversationWindowFactory : ToolWindowFactory {
 
                 override fun keyReleased(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ENTER && !e.isShiftDown) {
-                        val question = inputArea.text.trim()
+
+                        val message = inputArea.text
                         inputArea.text = ""
                         inputArea.isEnabled = false
-                        conversation.addMessage(Message(Role.USER, question))
 
                         GlobalScope.launch(Dispatchers.EDT) {
-                            // TODO add conversation service and run simple pipeline for slash command detection
-                            val answer = ollama.chat(conversation).trim()
-                            conversation.addMessage(Message(Role.ASSISTANT, answer))
-
+                            conversation.chat(message)
                             inputArea.isEnabled = true
                             inputArea.requestFocusInWindow()
                         }
