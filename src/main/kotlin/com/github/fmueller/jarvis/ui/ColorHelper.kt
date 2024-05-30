@@ -1,4 +1,4 @@
-package com.github.fmueller.jarvis.conversation
+package com.github.fmueller.jarvis.ui
 
 import java.awt.Color
 

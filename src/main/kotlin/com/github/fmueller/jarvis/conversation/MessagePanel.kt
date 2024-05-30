@@ -1,6 +1,7 @@
 package com.github.fmueller.jarvis.conversation;
 
-import com.github.fmueller.jarvis.conversation.ColorHelper.darker
+import com.github.fmueller.jarvis.ui.ColorHelper.darker
+import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane

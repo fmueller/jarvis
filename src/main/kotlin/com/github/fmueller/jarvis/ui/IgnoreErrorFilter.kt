@@ -1,4 +1,4 @@
-package com.github.fmueller.jarvis
+package com.github.fmueller.jarvis.ui
 
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
 import com.intellij.codeInsight.daemon.impl.HighlightInfoFilter
