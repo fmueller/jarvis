@@ -1,4 +1,4 @@
-package com.github.fmueller.jarvis.services
+package com.github.fmueller.jarvis.ai
 
 import com.github.fmueller.jarvis.conversation.Conversation
 import com.intellij.openapi.Disposable
@@ -37,6 +37,7 @@ class OllamaService : Disposable {
     private val process = OllamaProcess()
 
     init {
+        // TODO remove this autostart logic and show messages in conversation panel instead
         if (isOllamaRunning()) {
             thisLogger().info("Ollama process is already running")
         } else {

@@ -4,7 +4,7 @@ import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.ConversationPanel
 import com.github.fmueller.jarvis.conversation.Message
 import com.github.fmueller.jarvis.conversation.Role
-import com.github.fmueller.jarvis.services.OllamaService
+import com.github.fmueller.jarvis.ai.OllamaService
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
