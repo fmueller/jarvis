@@ -37,29 +37,30 @@ class ConversationWindowFactory : ToolWindowFactory {
         private val conversationPanel = ConversationPanel(conversation, toolWindow.project)
 
         @OptIn(DelicateCoroutinesApi::class)
-        fun getContent() = BorderLayoutPanel().apply {
-            val inputArea = InputArea().apply { placeholderText = "Ask Jarvis a question or type /? for help" }
+        private val inputArea = InputArea().apply {
+            placeholderText = "Ask Jarvis a question or type /? for help"
 
-            inputArea.addKeyListener(object : KeyAdapter() {
+            addKeyListener(object : KeyAdapter() {
 
                 override fun keyReleased(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ENTER && !e.isShiftDown) {
-
-                        val message = inputArea.text
-                        inputArea.text = ""
-                        inputArea.isEnabled = false
-
                         GlobalScope.launch(Dispatchers.EDT) {
+                            val message = text
+                            text = ""
+                            isEnabled = false
+
                             conversation.chat(message)
-                            inputArea.isEnabled = true
-                            inputArea.requestFocusInWindow()
+
+                            isEnabled = true
+                            requestFocusInWindow()
                         }
                     }
                 }
             })
+        }
 
+        fun getContent() = BorderLayoutPanel().apply {
             addToCenter(conversationPanel.scrollableContainer)
-
             addToBottom(BorderLayoutPanel().apply {
                 addToCenter(JPanel(BorderLayout()).apply {
                     border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
