@@ -7,6 +7,7 @@ import org.jetbrains.annotations.PropertyKey
 @NonNls
 private const val BUNDLE = "messages.MyBundle"
 
+// TODO what to do about this?
 object MyBundle : DynamicBundle(BUNDLE) {
 
     @JvmStatic
