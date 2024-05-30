@@ -11,7 +11,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.JBColor
-import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.content.ContentFactory
 import com.intellij.util.ui.JBUI
@@ -21,10 +20,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.awt.*
-import java.awt.event.*
+import java.awt.event.FocusEvent
+import java.awt.event.FocusListener
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import javax.swing.BorderFactory
 import javax.swing.JPanel
-import javax.swing.SwingUtilities
 import javax.swing.UIManager
 import javax.swing.border.AbstractBorder
 
@@ -43,44 +44,9 @@ class ConversationWindowFactory : ToolWindowFactory {
         private val project = toolWindow.project
         private val ollama = project.service<OllamaService>()
 
-        // TODO conversationPanel should have a reference to the conversation and register the property change listener
         private val conversation = Conversation()
-        private val conversationPanel = ConversationPanel(project)
-        private val scrollableConversationPanel = JBScrollPane(conversationPanel).apply {
-            verticalScrollBarPolicy = JBScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED
-            horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-        }
+        private val conversationPanel = ConversationPanel(conversation, project)
 
-        init {
-            var isUserScrolling = false
-
-            scrollableConversationPanel.verticalScrollBar.addAdjustmentListener { e ->
-                if (!isUserScrolling) {
-                    e.adjustable.value = e.adjustable.maximum
-                }
-            }
-
-            scrollableConversationPanel.addMouseListener(object : MouseAdapter() {
-                override fun mousePressed(e: MouseEvent?) {
-                    isUserScrolling = true
-                }
-            })
-
-            scrollableConversationPanel.addMouseWheelListener {
-                isUserScrolling = true
-            }
-
-            conversation.addPropertyChangeListener {
-                if (it.propertyName == "messages") {
-                    SwingUtilities.invokeLater {
-                        isUserScrolling = false
-                        conversationPanel.update(conversation)
-                    }
-                }
-            }
-
-            conversation.addMessage(Message(Role.ASSISTANT, "Hello! How can I help you?"))
-        }
 
         @OptIn(DelicateCoroutinesApi::class)
         fun getContent() = BorderLayoutPanel().apply {
@@ -145,7 +111,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                 }
             })
 
-            addToCenter(scrollableConversationPanel)
+            addToCenter(conversationPanel.scrollableContainer)
 
             addToBottom(BorderLayoutPanel().apply {
                 addToCenter(JPanel(BorderLayout()).apply {
