@@ -51,12 +51,6 @@ class InputArea : JBTextArea() {
         })
 
         addKeyListener(object : KeyAdapter() {
-            override fun keyPressed(e: KeyEvent) {
-                if (e.keyCode == KeyEvent.VK_ENTER && !e.isShiftDown) {
-                    e.consume()
-                }
-            }
-
             override fun keyReleased(e: KeyEvent) {
                 if (e.keyCode == KeyEvent.VK_ENTER && e.isShiftDown) {
                     append("\n")
