@@ -1,6 +1,7 @@
 package com.github.fmueller.jarvis.conversation
 
 import com.github.fmueller.jarvis.ai.OllamaService
+import com.github.fmueller.jarvis.commands.SlashCommandParser
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.time.LocalDateTime
@@ -15,24 +16,25 @@ enum class Role {
 
 data class Message(val role: Role, val content: String, val createdAt: LocalDateTime = LocalDateTime.now())
 
-class Conversation(private val ollamaService: OllamaService) {
+class Conversation(ollamaService: OllamaService) {
 
-    private val messages = mutableListOf<Message>()
+    private var _messages = mutableListOf<Message>()
+    val messages get() = _messages.toList()
+
+    private val commandParser = SlashCommandParser(ollamaService)
     private val propertyChangeSupport = PropertyChangeSupport(this)
 
     suspend fun chat(message: String): Conversation {
         addMessage(Message(Role.USER, message.trim()))
 
-        // TODO implement simple pipeline for slash command detection
-        val response = ollamaService.chat(messages).trim()
-        addMessage(Message(Role.ASSISTANT, response))
-        return this
+        val command = commandParser.parse(message)
+        return command.run(this)
     }
 
     fun addMessage(message: Message) {
-        val oldMessages = ArrayList(messages)
-        messages.add(message)
-        propertyChangeSupport.firePropertyChange("messages", oldMessages, ArrayList(messages))
+        val oldMessages = ArrayList(_messages)
+        _messages.add(message)
+        propertyChangeSupport.firePropertyChange("messages", oldMessages, ArrayList(_messages))
     }
 
     fun addPropertyChangeListener(listener: PropertyChangeListener) {
