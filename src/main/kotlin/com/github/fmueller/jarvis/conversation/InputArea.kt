@@ -51,6 +51,14 @@ class InputArea : JBTextArea() {
         })
 
         addKeyListener(object : KeyAdapter() {
+
+            // do not remove this method, its purpose is to prevent the default behavior of the Enter key
+            override fun keyPressed(e: KeyEvent) {
+                if (e.keyCode == KeyEvent.VK_ENTER && !e.isShiftDown) {
+                    e.consume()
+                }
+            }
+
             override fun keyReleased(e: KeyEvent) {
                 if (e.keyCode == KeyEvent.VK_ENTER && e.isShiftDown) {
                     append("\n")
