@@ -2,6 +2,8 @@ package com.github.fmueller.jarvis.conversation;
 
 import com.github.fmueller.jarvis.ui.ColorHelper.darker
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
@@ -70,9 +72,33 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
     }
 
     private fun addNonCodeContent(markdown: String) {
-        // TODO add some formatting to the generated HTML for paragraphs, lists, inline code etc.
+        val globalScheme = EditorColorsManager.getInstance().globalScheme
+        val functionDeclaration = TextAttributesKey.createTextAttributesKey("DEFAULT_FUNCTION_DECLARATION")
+        val codeColor =
+            globalScheme.getAttributes(functionDeclaration).foregroundColor ?: globalScheme.defaultForeground
         val editorPane = JEditorPane().apply {
-            editorKit = HTMLEditorKitBuilder.simple()
+            editorKit = HTMLEditorKitBuilder.simple().apply {
+                styleSheet.addRule(
+                    """
+                        p {
+                            margin: 4px 0;
+                        }
+                        ul, ol {
+                            margin-top: 4px;
+                            margin-bottom: 8px;
+                        }
+                        h1, h2, h3, h4, h5, h6 {
+                            margin-top: 8px;
+                            margin-bottom: 0;
+                        }
+                        code {
+                            background-color: rgb(${bgColor.red}, ${bgColor.green}, ${bgColor.blue});
+                            color: rgb(${codeColor.red}, ${codeColor.green}, ${codeColor.blue});
+                            font-size: 0.9em;
+                        }
+                    """.trimIndent()
+                )
+            }
             text = markdownToHtml(markdown)
             isEditable = false
             background = bgColor
@@ -82,12 +108,12 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
     }
 
     private fun addHighlightedCode(languageId: String, code: String) {
-        // TODO add some nice borders to the code block and potentially some padding
         val editor = syntaxHelper.getHighlightedEditor(languageId, code)
         if (editor != null) {
             editor.contentComponent.border = BorderFactory.createEmptyBorder(5, 5, 5, 5)
             add(JBScrollPane(editor.component).apply {
-                border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+                background = bgColor
+                border = BorderFactory.createEmptyBorder(10, 5, 10, 5)
             })
         } else {
             addNonCodeContent(code)
