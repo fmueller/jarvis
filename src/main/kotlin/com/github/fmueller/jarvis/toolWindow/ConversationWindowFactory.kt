@@ -44,8 +44,12 @@ class ConversationWindowFactory : ToolWindowFactory {
 
                 override fun keyReleased(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ENTER && !e.isShiftDown) {
+                        val message = text.trim()
+                        if (message.isEmpty()) {
+                            return
+                        }
+
                         GlobalScope.launch(Dispatchers.EDT) {
-                            val message = text
                             text = ""
                             isEnabled = false
 
