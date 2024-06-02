@@ -37,6 +37,13 @@ class Conversation(ollamaService: OllamaService) {
         propertyChangeSupport.firePropertyChange("messages", oldMessages, ArrayList(_messages))
     }
 
+    fun clearMessages() {
+        val oldMessages = ArrayList(_messages)
+        _messages.clear()
+        _messages.add(Message(Role.ASSISTANT, "Hello! How can I help you?"))
+        propertyChangeSupport.firePropertyChange("messages", oldMessages, ArrayList(_messages))
+    }
+
     fun addPropertyChangeListener(listener: PropertyChangeListener) {
         propertyChangeSupport.addPropertyChangeListener(listener)
     }

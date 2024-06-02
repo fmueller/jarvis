@@ -10,8 +10,14 @@ class HelpCommand : SlashCommand {
         conversation.addMessage(
             Message(
                 Role.ASSISTANT,
-                "I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly," +
-                        " please install and run Ollama locally."
+                """
+                I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly, please install and run Ollama locally.
+                
+                Available commands:
+                
+                - ```/help``` or ```/?``` - Shows this help message
+                - ```/new``` - Starts a new conversation
+                """.trimIndent()
             )
         )
         return conversation

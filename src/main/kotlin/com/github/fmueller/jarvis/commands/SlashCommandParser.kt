@@ -10,6 +10,10 @@ class SlashCommandParser(private val ollamaService: OllamaService) {
             return HelpCommand()
         }
 
+        if (trimmedMessage == "/new") {
+            return NewConversationCommand()
+        }
+
         return ChatCommand(ollamaService)
     }
 }
