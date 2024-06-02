@@ -1,6 +1,5 @@
 package com.github.fmueller.jarvis.conversation;
 
-import com.github.fmueller.jarvis.ui.ColorHelper.darker
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.TextAttributesKey
@@ -8,6 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.HTMLEditorKitBuilder
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
 import com.vladsch.flexmark.ext.tables.TablesExtension
@@ -26,8 +26,8 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
 
     private companion object {
         private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n```", Pattern.DOTALL)
-        private val assistantBgColor = UIUtil.getPanelBackground().darker(0.95)
-        private val userBgColor = UIUtil.getPanelBackground().darker(0.85)
+        private val assistantBgColor = UIUtil.getPanelBackground()
+        private val userBgColor = UIUtil.getTextFieldBackground()
     }
 
     private val syntaxHelper = SyntaxHighlightedCodeHelper(project)
@@ -36,7 +36,10 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
     init {
         background = bgColor
         layout = VerticalLayout(5)
-        border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        border = BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, JBUI.CurrentTheme.ToolWindow.borderColor()),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        )
 
         add(JBLabel(if (message.role == Role.ASSISTANT) "Jarvis" else "You").apply {
             font = font.deriveFont(Font.BOLD)
@@ -112,7 +115,7 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
         if (editor != null) {
             editor.contentComponent.border = BorderFactory.createEmptyBorder(5, 5, 5, 5)
             add(JBScrollPane(editor.component).apply {
-                background = bgColor
+                viewport.view.background = bgColor
                 border = BorderFactory.createEmptyBorder(10, 5, 10, 5)
             })
         } else {

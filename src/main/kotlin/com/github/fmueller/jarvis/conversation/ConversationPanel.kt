@@ -1,9 +1,7 @@
 package com.github.fmueller.jarvis.conversation
 
-import com.github.fmueller.jarvis.ui.ColorHelper.darker
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.util.ui.UIUtil
 import org.jdesktop.swingx.VerticalLayout
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -14,7 +12,6 @@ class ConversationPanel(conversation: Conversation, private val project: Project
 
     private val panel = JPanel().apply {
         layout = VerticalLayout(1)
-        background = UIUtil.getPanelBackground().darker(0.75)
     }
 
     // we are exposing the scrollable container here and keep it in the panel
