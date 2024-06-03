@@ -53,9 +53,12 @@ class InputArea : JBTextArea() {
         })
     }
 
-    override fun paintComponent(g: Graphics) {
+    override fun updateUI() {
+        super.updateUI()
+
         font = UIManager.getFont("Label.font")
         background = UIUtil.getPanelBackground()
+
         border = object : AbstractBorder() {
             override fun getBorderInsets(c: Component?): Insets {
                 return JBUI.insets(9)
@@ -69,7 +72,9 @@ class InputArea : JBTextArea() {
                 g2.dispose()
             }
         }
+    }
 
+    override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
         if (text.isEmpty() && placeholderText != null) {

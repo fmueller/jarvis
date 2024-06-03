@@ -22,20 +22,34 @@ import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
 
-class MessagePanel(message: Message, project: Project) : JPanel() {
+class MessagePanel(private val message: Message, project: Project) : JPanel() {
 
     private companion object {
         private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n```", Pattern.DOTALL)
-        private val assistantBgColor = UIUtil.getPanelBackground()
-        private val userBgColor = UIUtil.getTextFieldBackground()
+        private val assistantBgColor = { UIUtil.getPanelBackground() }
+        private val userBgColor = { UIUtil.getTextFieldBackground() }
     }
 
     private val syntaxHelper = SyntaxHighlightedCodeHelper(project)
-    private val bgColor = if (message.role == Role.ASSISTANT) assistantBgColor else userBgColor
 
     init {
-        background = bgColor
+        buildPanel()
+    }
+
+    override fun updateUI() {
+        super.updateUI()
+        buildPanel()
+    }
+
+    private fun buildPanel() {
+        if (message == null) {
+            return
+        }
+
+        removeAll()
+
         layout = VerticalLayout(5)
+        background = if (message.role == Role.ASSISTANT) assistantBgColor() else userBgColor()
         border = BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, JBUI.CurrentTheme.ToolWindow.borderColor()),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
@@ -79,6 +93,7 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
         val functionDeclaration = TextAttributesKey.createTextAttributesKey("DEFAULT_FUNCTION_DECLARATION")
         val codeColor =
             globalScheme.getAttributes(functionDeclaration).foregroundColor ?: globalScheme.defaultForeground
+        val outerPanelBackground = background
         val editorPane = JEditorPane().apply {
             editorKit = HTMLEditorKitBuilder.simple().apply {
                 styleSheet.addRule(
@@ -95,7 +110,7 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
                             margin-bottom: 0;
                         }
                         code {
-                            background-color: rgb(${bgColor.red}, ${bgColor.green}, ${bgColor.blue});
+                            background-color: rgb(${outerPanelBackground.red}, ${outerPanelBackground.green}, ${outerPanelBackground.blue});
                             color: rgb(${codeColor.red}, ${codeColor.green}, ${codeColor.blue});
                             font-size: 0.9em;
                         }
@@ -104,7 +119,7 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
             }
             text = markdownToHtml(markdown)
             isEditable = false
-            background = bgColor
+            background = outerPanelBackground
             border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         }
         add(editorPane)
@@ -114,8 +129,9 @@ class MessagePanel(message: Message, project: Project) : JPanel() {
         val editor = syntaxHelper.getHighlightedEditor(languageId, code)
         if (editor != null) {
             editor.contentComponent.border = BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            val outerPanelBackground = background
             add(JBScrollPane(editor.component).apply {
-                viewport.view.background = bgColor
+                viewport.view.background = outerPanelBackground
                 border = BorderFactory.createEmptyBorder(10, 5, 10, 5)
             })
         } else {

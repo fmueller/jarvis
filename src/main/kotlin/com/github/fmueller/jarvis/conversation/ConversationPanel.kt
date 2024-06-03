@@ -52,7 +52,6 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         conversation.addMessage(Message(Role.ASSISTANT, "Hello! How can I help you?"))
     }
 
-    // TODO recalculate colors on theme change and don't set darker panel background for bright themes
     private fun update(messages: List<Message>) {
         panel.removeAll()
         messages.forEach { message ->
