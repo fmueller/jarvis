@@ -1,7 +1,8 @@
 package com.github.fmueller.jarvis.conversation
 
-import com.github.fmueller.jarvis.ai.OllamaService
 import com.github.fmueller.jarvis.commands.SlashCommandParser
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.components.Service
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.time.LocalDateTime
@@ -16,19 +17,20 @@ enum class Role {
 
 data class Message(val role: Role, val content: String, val createdAt: LocalDateTime = LocalDateTime.now())
 
-class Conversation(ollamaService: OllamaService) {
+// as long as we don't have conversation history persistence,
+// we can keep the conversation in memory
+// and declare it as a project-level service
+@Service(Service.Level.PROJECT)
+class Conversation : Disposable {
 
     private var _messages = mutableListOf<Message>()
     val messages get() = _messages.toList()
 
-    private val commandParser = SlashCommandParser(ollamaService)
     private val propertyChangeSupport = PropertyChangeSupport(this)
 
     suspend fun chat(message: String): Conversation {
         addMessage(Message(Role.USER, message.trim()))
-
-        val command = commandParser.parse(message)
-        return command.run(this)
+        return SlashCommandParser.parse(message).run(this)
     }
 
     fun addMessage(message: Message) {
@@ -46,5 +48,11 @@ class Conversation(ollamaService: OllamaService) {
 
     fun addPropertyChangeListener(listener: PropertyChangeListener) {
         propertyChangeSupport.addPropertyChangeListener(listener)
+    }
+
+    override fun dispose() {
+        propertyChangeSupport.getPropertyChangeListeners("messages").forEach {
+            propertyChangeSupport.removePropertyChangeListener(it)
+        }
     }
 }

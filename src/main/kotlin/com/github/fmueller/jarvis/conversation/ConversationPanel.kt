@@ -1,6 +1,8 @@
 package com.github.fmueller.jarvis.conversation
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBScrollPane
 import org.jdesktop.swingx.VerticalLayout
 import java.awt.event.MouseAdapter
@@ -8,7 +10,7 @@ import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-class ConversationPanel(conversation: Conversation, private val project: Project) {
+class ConversationPanel(conversation: Conversation, private val project: Project) : Disposable {
 
     private val panel = JPanel().apply {
         layout = VerticalLayout(1)
@@ -22,6 +24,8 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     }
 
     init {
+        Disposer.register(conversation, this)
+
         var isUserScrolling = false
 
         scrollableContainer.verticalScrollBar.addAdjustmentListener { e ->
@@ -53,11 +57,23 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     }
 
     private fun update(messages: List<Message>) {
-        panel.removeAll()
-        messages.forEach { message ->
-            panel.add(MessagePanel(message, project))
+        if (messages.size <= 1) {
+            panel.components.filter { it is Disposable }.map { it as Disposable }.forEach { it.dispose() }
+            panel.removeAll()
         }
+
+        if (messages.isNotEmpty()) {
+            val messagePanel = MessagePanel(messages.last(), project)
+            Disposer.register(this, messagePanel)
+            panel.add(messagePanel)
+        }
+
         panel.revalidate()
         panel.repaint()
+    }
+
+    override fun dispose() {
+        // nothing to dispose here, all message panels are disposed when the panel is cleared
+        // or automatically when the conversation is disposed
     }
 }

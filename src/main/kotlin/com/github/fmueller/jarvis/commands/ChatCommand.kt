@@ -5,10 +5,10 @@ import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.Message
 import com.github.fmueller.jarvis.conversation.Role
 
-class ChatCommand(private val ollamaService: OllamaService) : SlashCommand {
+class ChatCommand : SlashCommand {
 
     override suspend fun run(conversation: Conversation): Conversation {
-        if (!ollamaService.isAvailable()) {
+        if (!OllamaService.isAvailable()) {
             conversation.addMessage(
                 Message(
                     Role.ASSISTANT,
@@ -18,7 +18,7 @@ class ChatCommand(private val ollamaService: OllamaService) : SlashCommand {
             return conversation
         }
 
-        val response = ollamaService.chat(conversation.messages).trim()
+        val response = OllamaService.chat(conversation.messages).trim()
         conversation.addMessage(Message(Role.ASSISTANT, response))
         return conversation
     }

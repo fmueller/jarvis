@@ -11,11 +11,12 @@ import java.time.format.DateTimeFormatter
 
 class SyntaxHighlightedCodeHelper(private val project: Project) {
 
+    private val createdEditors = mutableListOf<Editor>()
+
     companion object {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS")
     }
 
-    // TODO add disposal of created editors
     fun getHighlightedEditor(languageId: String, code: String): Editor? {
         // TODO test with some Kotlin code and see if the language is correctly detected
         val language = Language.findLanguageByID(languageId) ?: IgnoreLanguage.INSTANCE
@@ -29,6 +30,7 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
             )
 
         val editor = EditorFactory.getInstance().createEditor(file.viewProvider.document, project, fileType, true)
+        createdEditors.add(editor)
 
         editor.settings.apply {
             isLineNumbersShown = false
@@ -47,5 +49,10 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
             additionalColumnsCount = 0
         }
         return editor
+    }
+
+    fun disposeAllEditors() {
+        createdEditors.forEach { EditorFactory.getInstance().releaseEditor(it) }
+        createdEditors.clear()
     }
 }

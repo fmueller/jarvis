@@ -1,6 +1,7 @@
 package com.github.fmueller.jarvis.conversation;
 
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
@@ -22,7 +23,7 @@ import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
 
-class MessagePanel(private val message: Message, project: Project) : JPanel() {
+class MessagePanel(private val message: Message, project: Project) : JPanel(), Disposable {
 
     private companion object {
         private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n```", Pattern.DOTALL)
@@ -30,7 +31,7 @@ class MessagePanel(private val message: Message, project: Project) : JPanel() {
         private val userBgColor = { UIUtil.getTextFieldBackground() }
     }
 
-    private val syntaxHelper = SyntaxHighlightedCodeHelper(project)
+    private val highlightedCodeHelper = SyntaxHighlightedCodeHelper(project)
 
     init {
         buildPanel()
@@ -41,12 +42,17 @@ class MessagePanel(private val message: Message, project: Project) : JPanel() {
         buildPanel()
     }
 
+    override fun dispose() {
+        highlightedCodeHelper.disposeAllEditors()
+    }
+
     private fun buildPanel() {
         if (message == null) {
             return
         }
 
         removeAll()
+        highlightedCodeHelper.disposeAllEditors()
 
         layout = VerticalLayout(5)
         background = if (message.role == Role.ASSISTANT) assistantBgColor() else userBgColor()
@@ -126,7 +132,7 @@ class MessagePanel(private val message: Message, project: Project) : JPanel() {
     }
 
     private fun addHighlightedCode(languageId: String, code: String) {
-        val editor = syntaxHelper.getHighlightedEditor(languageId, code)
+        val editor = highlightedCodeHelper.getHighlightedEditor(languageId, code)
         if (editor != null) {
             editor.contentComponent.border = BorderFactory.createEmptyBorder(5, 5, 5, 5)
             val outerPanelBackground = background

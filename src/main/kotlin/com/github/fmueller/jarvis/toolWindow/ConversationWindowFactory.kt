@@ -1,6 +1,5 @@
 package com.github.fmueller.jarvis.toolWindow
 
-import com.github.fmueller.jarvis.ai.OllamaService
 import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.ConversationPanel
 import com.github.fmueller.jarvis.conversation.InputArea
@@ -33,7 +32,7 @@ class ConversationWindowFactory : ToolWindowFactory {
 
     class ConversationWindow(toolWindow: ToolWindow) {
 
-        private val conversation = Conversation(toolWindow.project.service<OllamaService>())
+        private val conversation = toolWindow.project.service<Conversation>()
         private val conversationPanel = ConversationPanel(conversation, toolWindow.project)
 
         @OptIn(DelicateCoroutinesApi::class)

@@ -1,7 +1,6 @@
 package com.github.fmueller.jarvis.ai
 
 import com.github.fmueller.jarvis.conversation.Message
-import com.intellij.openapi.components.Service
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -26,8 +25,7 @@ private data class ChatRequest(
 @Serializable
 private data class ChatResponse(val message: ChatMessage)
 
-@Service(Service.Level.PROJECT)
-class OllamaService {
+object OllamaService {
 
     suspend fun chat(messages: List<Message>): String = withContext(Dispatchers.IO) {
         // TODO check if model is available

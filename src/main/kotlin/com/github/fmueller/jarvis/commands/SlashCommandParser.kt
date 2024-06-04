@@ -1,8 +1,6 @@
 package com.github.fmueller.jarvis.commands
 
-import com.github.fmueller.jarvis.ai.OllamaService
-
-class SlashCommandParser(private val ollamaService: OllamaService) {
+object SlashCommandParser {
 
     fun parse(message: String): SlashCommand {
         val trimmedMessage = message.trim().lowercase()
@@ -14,6 +12,6 @@ class SlashCommandParser(private val ollamaService: OllamaService) {
             return NewConversationCommand()
         }
 
-        return ChatCommand(ollamaService)
+        return ChatCommand()
     }
 }
