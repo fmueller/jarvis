@@ -9,8 +9,7 @@ import com.intellij.psi.PsiFile
 class IgnoreCodeErrorsFilter : HighlightErrorFilter(), HighlightInfoFilter {
 
     override fun accept(highlightInfo: HighlightInfo, file: PsiFile?): Boolean {
-        // TODO consider using a more specific check for the file type, e.g. mark created editors with a custom property
-        return !(file?.name?.startsWith("highlighted_code.created_at.") ?: false)
+        return !(file?.name?.startsWith(SyntaxHighlightedCodeHelper.EDITOR_PREFIX) ?: false)
     }
 
     override fun shouldHighlightErrorElement(element: PsiErrorElement): Boolean {

@@ -8,13 +8,15 @@ import com.intellij.openapi.vcs.changes.ignore.lang.IgnoreLanguage
 import com.intellij.psi.PsiFileFactory
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.random.Random
 
 class SyntaxHighlightedCodeHelper(private val project: Project) {
 
     private val createdEditors = mutableListOf<Editor>()
 
     companion object {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS")
+        const val EDITOR_PREFIX = "SyntaxHighlightedCodeHelper.HighlightedCode."
+        private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS")
     }
 
     fun getHighlightedEditor(languageId: String, code: String): Editor? {
@@ -24,7 +26,7 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
 
         val file = PsiFileFactory.getInstance(project)
             .createFileFromText(
-                "highlighted_code.created_at.${
+                "${EDITOR_PREFIX}.${Random.nextLong()}.${
                     LocalDateTime.now().format(formatter)
                 }.${fileType.defaultExtension}", language, code.trim()
             )
