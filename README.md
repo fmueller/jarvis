@@ -1,8 +1,8 @@
 # Jarvis
 
 ![Build](https://github.com/fmueller/jarvis/workflows/Build/badge.svg?branch=main)
-[![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
+[![Version](https://img.shields.io/jetbrains/plugin/v/24755-jarvis.svg)](https://plugins.jetbrains.com/plugin/24755-jarvis)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/24755-jarvis.svg)](https://plugins.jetbrains.com/plugin/24755-jarvis)
 
 ## About
 
