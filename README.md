@@ -1,6 +1,6 @@
 # Jarvis
 
-![Build](https://github.com/fmueller/jarvis/workflows/Build/badge.svg?branch=main)
+[![Build](https://github.com/fmueller/jarvis/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/fmueller/jarvis/actions/workflows/build.yml)
 [![Version](https://img.shields.io/jetbrains/plugin/v/24755-jarvis.svg)](https://plugins.jetbrains.com/plugin/24755-jarvis)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/24755-jarvis.svg)](https://plugins.jetbrains.com/plugin/24755-jarvis)
 
