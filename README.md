@@ -1,13 +1,14 @@
 # Jarvis
 
-![Build](https://github.com/fmueller/jarvis/workflows/Build/badge.svg)
+![Build](https://github.com/fmueller/jarvis/workflows/Build/badge.svg?branch=main)
 [![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
 
 ## About
 
 <!-- Plugin description -->
-LLM-powered developer plugin for JetBrains IDE platform
+Jarvis is an LLM-powered developer plugin for the JetBrains IDE platform. It aims to support developers by leveraging
+local LLMs only. To achieve this, it is integrating with Ollama.
 <!-- Plugin description end -->
 
 ## Installation
@@ -22,4 +23,4 @@ LLM-powered developer plugin for JetBrains IDE platform
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE.md)
+This project is licensed under the [MIT](LICENSE)
