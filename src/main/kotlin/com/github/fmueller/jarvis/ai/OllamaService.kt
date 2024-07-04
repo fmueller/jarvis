@@ -49,7 +49,7 @@ object OllamaService {
                         You use paragraphs, lists, and code blocks to make your responses more readable.
                         """.trimIndent()
                     )
-                ) + messages.map { ChatMessage(it.role.toString(), it.content) },
+                ) + messages.map { ChatMessage(it.role.toString(), it.toString()) },
                 false
             )
             val httpRequest = HttpRequest.newBuilder()

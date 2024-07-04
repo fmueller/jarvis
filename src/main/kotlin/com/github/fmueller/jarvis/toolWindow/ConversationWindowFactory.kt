@@ -1,8 +1,6 @@
 package com.github.fmueller.jarvis.toolWindow
 
-import com.github.fmueller.jarvis.conversation.Conversation
-import com.github.fmueller.jarvis.conversation.ConversationPanel
-import com.github.fmueller.jarvis.conversation.InputArea
+import com.github.fmueller.jarvis.conversation.*
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -52,7 +50,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                             text = ""
                             isEnabled = false
 
-                            conversation.chat(message)
+                            conversation.chat(Message(Role.USER, message, CodeContextHelper.getCodeContext(toolWindow.project)))
 
                             isEnabled = true
                             requestFocusInWindow()

@@ -1,6 +1,7 @@
 package com.github.fmueller.jarvis.conversation
 
 import com.github.fmueller.jarvis.commands.SlashCommandParser
+import com.intellij.lang.Language
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import java.beans.PropertyChangeListener
@@ -15,7 +16,29 @@ enum class Role {
     override fun toString() = name.lowercase()
 }
 
-data class Message(val role: Role, val content: String, val createdAt: LocalDateTime = LocalDateTime.now())
+data class Code(val content: String, val language: Language = Language.ANY)
+
+data class CodeContext(val selected: Code)
+
+data class Message(
+    val role: Role,
+    val content: String,
+    val codeContext: CodeContext? = null,
+    val createdAt: LocalDateTime = LocalDateTime.now()
+) {
+    fun hasCodeContext() = codeContext != null
+
+    override fun toString() =
+        if (hasCodeContext())
+            """
+            |$content
+            |```
+            |${codeContext!!.selected.content.trim()}
+            |```
+            """.trimMargin()
+        else
+            content.trim()
+}
 
 // as long as we don't have conversation history persistence,
 // we can keep the conversation in memory
@@ -28,9 +51,9 @@ class Conversation : Disposable {
 
     private val propertyChangeSupport = PropertyChangeSupport(this)
 
-    suspend fun chat(message: String): Conversation {
-        addMessage(Message(Role.USER, message.trim()))
-        return SlashCommandParser.parse(message).run(this)
+    suspend fun chat(message: Message): Conversation {
+        addMessage(message)
+        return SlashCommandParser.parse(message.content).run(this)
     }
 
     fun addMessage(message: Message) {
