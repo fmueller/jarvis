@@ -65,7 +65,7 @@ class MessagePanel(private val message: Message, project: Project) : JPanel(), D
             font = font.deriveFont(Font.BOLD)
             border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         })
-        parseAndRenderMarkdown(message.toString())
+        parseAndRenderMarkdown(message.asMarkdown())
     }
 
     // TODO add some tests for the parsing logic

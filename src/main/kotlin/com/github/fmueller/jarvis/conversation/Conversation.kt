@@ -26,18 +26,27 @@ data class Message(
     val codeContext: CodeContext? = null,
     val createdAt: LocalDateTime = LocalDateTime.now()
 ) {
-    fun hasCodeContext() = codeContext != null
 
-    override fun toString() =
-        if (hasCodeContext())
+    fun asMarkdown() =
+        if (shouldAddSelectedCode())
             """
-            |$content
+            |${contentWithoutFlags()}
             |```
             |${codeContext!!.selected.content.trim()}
             |```
             """.trimMargin()
         else
             content.trim()
+
+    private fun shouldAddSelectedCode() =
+        hasCodeContext() && (content.contains("--selected-code") || content.contains("-s"))
+
+    private fun hasCodeContext() = codeContext != null
+
+    private fun contentWithoutFlags() = content
+        .replace("--selected-code", "")
+        .replace("-s", "")
+        .trim()
 }
 
 // as long as we don't have conversation history persistence,
