@@ -27,16 +27,18 @@ data class Message(
     val createdAt: LocalDateTime = LocalDateTime.now()
 ) {
 
-    fun asMarkdown() =
-        if (shouldAddSelectedCode())
+    fun asMarkdown(): String =
+        if (shouldAddSelectedCode()) {
+            val languageIdentifier = codeContext?.selected?.language?.id ?: "plaintext"
             """
             |${contentWithoutFlags()}
-            |```
+            |```$languageIdentifier
             |${codeContext!!.selected.content.trim()}
             |```
             """.trimMargin()
-        else
+        } else {
             content.trim()
+        }
 
     private fun shouldAddSelectedCode() =
         hasCodeContext() && (content.contains("--selected-code") || content.contains("-s"))
