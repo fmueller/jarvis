@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2024-07-12
+
+### Added
+
+- Support for selected code in prompts
+
 ## [1.0.0] - 2024-06-28
 
 ### Added
