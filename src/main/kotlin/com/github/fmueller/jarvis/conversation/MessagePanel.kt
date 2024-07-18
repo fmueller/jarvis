@@ -23,7 +23,7 @@ import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
 
-class MessagePanel(private val message: Message, project: Project) : JPanel(), Disposable {
+class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Disposable {
 
     private companion object {
         private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n```", Pattern.DOTALL)
@@ -32,6 +32,14 @@ class MessagePanel(private val message: Message, project: Project) : JPanel(), D
     }
 
     private val highlightedCodeHelper = SyntaxHighlightedCodeHelper(project)
+
+    private var _message: Message = initialMessage
+    var message: Message
+        get() = _message
+        set(value) {
+            _message = value
+            updateUI()
+        }
 
     init {
         buildPanel()

@@ -60,6 +60,8 @@ class Conversation : Disposable {
     private var _messages = mutableListOf<Message>()
     val messages get() = _messages.toList()
 
+    private val _messageBeingGenerated = StringBuilder()
+
     private val propertyChangeSupport = PropertyChangeSupport(this)
 
     suspend fun chat(message: Message): Conversation {
@@ -67,13 +69,21 @@ class Conversation : Disposable {
         return SlashCommandParser.parse(message.content).run(this)
     }
 
+    fun addToMessageBeingGenerated(text: String) {
+        val old = _messageBeingGenerated.toString()
+        _messageBeingGenerated.append(text)
+        propertyChangeSupport.firePropertyChange("messageBeingGenerated", old, _messageBeingGenerated.toString())
+    }
+
     fun addMessage(message: Message) {
+        clearMessageBeingGenerated()
         val oldMessages = ArrayList(_messages)
         _messages.add(message)
         propertyChangeSupport.firePropertyChange("messages", oldMessages, ArrayList(_messages))
     }
 
     fun clearMessages() {
+        clearMessageBeingGenerated()
         val oldMessages = ArrayList(_messages)
         _messages.clear()
         _messages.add(Message(Role.ASSISTANT, "Hello! How can I help you?"))
@@ -88,5 +98,11 @@ class Conversation : Disposable {
         propertyChangeSupport.getPropertyChangeListeners("messages").forEach {
             propertyChangeSupport.removePropertyChangeListener(it)
         }
+    }
+
+    private fun clearMessageBeingGenerated() {
+        val old = _messageBeingGenerated.toString()
+        _messageBeingGenerated.clear()
+        propertyChangeSupport.firePropertyChange("messageBeingGenerated", old, "")
     }
 }

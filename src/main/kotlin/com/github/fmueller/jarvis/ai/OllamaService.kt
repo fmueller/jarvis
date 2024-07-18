@@ -1,6 +1,6 @@
 package com.github.fmueller.jarvis.ai
 
-import com.github.fmueller.jarvis.conversation.Message
+import com.github.fmueller.jarvis.conversation.Conversation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -27,7 +27,7 @@ private data class ChatResponse(val message: ChatMessage)
 
 object OllamaService {
 
-    suspend fun chat(messages: List<Message>): String = withContext(Dispatchers.IO) {
+    suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
         // TODO check if model is available
         // TODO if not, download model
         try {
@@ -49,18 +49,30 @@ object OllamaService {
                         You use paragraphs, lists, and code blocks to make your responses more readable.
                         """.trimIndent()
                     )
-                ) + messages.map { ChatMessage(it.role.toString(), it.asMarkdown()) },
-                false
+                ) + conversation.messages.map { ChatMessage(it.role.toString(), it.asMarkdown()) },
+                true
             )
             val httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:11434/api/chat"))
                 .POST(HttpRequest.BodyPublishers.ofString(Json.encodeToString(chatRequest)))
                 .build()
 
-            val httpResponse = client.send(httpRequest, HttpResponse.BodyHandlers.ofString())
             val json = Json { ignoreUnknownKeys = true }
-            val response = json.decodeFromString<ChatResponse>(httpResponse.body())
-            response.message.content
+            val response = StringBuilder()
+            client.send(httpRequest) {
+                HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofLines(Charsets.UTF_8)) { lines ->
+                    lines
+                        .filter { line -> line.isNotEmpty() }
+                        .forEach { line ->
+                            run {
+                                val update = json.decodeFromString<ChatResponse>(line).message.content
+                                response.append(update)
+                                conversation.addToMessageBeingGenerated(update)
+                            }
+                        }
+                }
+            }
+            response.toString()
         } catch (e: Exception) {
             "Error: ${e.message}"
         }

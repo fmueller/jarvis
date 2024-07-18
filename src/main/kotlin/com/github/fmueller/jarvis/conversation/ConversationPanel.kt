@@ -16,6 +16,8 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         layout = VerticalLayout(1)
     }
 
+    private var updatePanel: MessagePanel? = null
+
     // we are exposing the scrollable container here and keep it in the panel
     // because we need to adjust the scroll position when new messages are added
     val scrollableContainer = JBScrollPane(panel).apply {
@@ -53,7 +55,33 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             }
         }
 
+        conversation.addPropertyChangeListener {
+            if (it.propertyName == "messageBeingGenerated") {
+                SwingUtilities.invokeLater {
+                    isUserScrolling = false
+                    updateMessageInProgress(it.newValue as String)
+                }
+            }
+        }
+
         conversation.addMessage(Message(Role.ASSISTANT, "Hello! How can I help you?"))
+    }
+
+    private fun updateMessageInProgress(update: String) {
+        if (update.isNotEmpty()) {
+            if (updatePanel == null) {
+                updatePanel = MessagePanel(Message(Role.ASSISTANT, update), project)
+                panel.add(updatePanel)
+            } else {
+                updatePanel!!.message = Message(Role.ASSISTANT, update)
+            }
+        } else if (updatePanel != null) {
+            panel.remove(updatePanel)
+            updatePanel = null
+        }
+
+        panel.revalidate()
+        panel.repaint()
     }
 
     private fun update(messages: List<Message>) {
