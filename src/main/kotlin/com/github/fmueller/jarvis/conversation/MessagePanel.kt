@@ -31,6 +31,10 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         private val userBgColor = { UIUtil.getTextFieldBackground() }
     }
 
+    private sealed interface ParsedContent
+    private data class Content(val markdown: String) : ParsedContent
+    private data class Code(val languageId: String, val content: String) : ParsedContent
+
     private val highlightedCodeHelper = SyntaxHighlightedCodeHelper(project)
 
     private var _message: Message = initialMessage
@@ -38,7 +42,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         get() = _message
         set(value) {
             _message = value
-            updateUI()
+            buildPanel()
         }
 
     init {
@@ -73,24 +77,25 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             font = font.deriveFont(Font.BOLD)
             border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         })
-        parseAndRenderMarkdown(message.asMarkdown())
+
+        render(parse(message.asMarkdown()))
     }
 
-    // TODO add some tests for the parsing logic
-    private fun parseAndRenderMarkdown(markdown: String) {
+    private fun parse(markdown: String): List<ParsedContent> {
+        val parsed = mutableListOf<ParsedContent>()
         val matcher = codeBlockPattern.matcher(markdown)
         var lastEnd = 0
         while (matcher.find()) {
             // Add preceding non-code content
             if (matcher.start() > lastEnd) {
                 val nonCodeMarkdown = markdown.substring(lastEnd, matcher.start())
-                addNonCodeContent(nonCodeMarkdown)
+                parsed.add(Content(nonCodeMarkdown))
             }
 
             // Add syntax-highlighted code
             val languageId = matcher.group(1)?.uppercase(Locale.getDefault())
             val code = matcher.group(2)
-            addHighlightedCode(languageId ?: "plaintext", code)
+            parsed.add(Code(languageId ?: "plaintext", code))
 
             lastEnd = matcher.end()
         }
@@ -98,7 +103,18 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         // Add any remaining non-code content
         if (lastEnd < markdown.length) {
             val remainingNonCodeMarkdown = markdown.substring(lastEnd)
-            addNonCodeContent(remainingNonCodeMarkdown)
+            parsed.add(Content(remainingNonCodeMarkdown))
+        }
+
+        return parsed
+    }
+
+    private fun render(parsed: List<ParsedContent>) {
+        parsed.forEach {
+            when (it) {
+                is Content -> addNonCodeContent(it.markdown)
+                is Code -> addHighlightedCode(it.languageId, it.content)
+            }
         }
     }
 
