@@ -14,7 +14,7 @@ local LLMs only. To achieve this, it is integrating with Ollama.
 ## Installation
 
 1. Install and run [Ollama](https://ollama.com)
-2. Download LLama3 8B model in Ollama: ```ollama run llama3```
+2. Download LLama 3.1 8B model in Ollama: ```ollama run llama3.1```
 3. Install Jarvis plugin in your Jetbrains IDE:
    - Using the IDE built-in plugin system: <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "jarvis"</kbd> >
      <kbd>Install</kbd>

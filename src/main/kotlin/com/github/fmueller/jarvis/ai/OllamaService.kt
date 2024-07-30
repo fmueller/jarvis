@@ -33,7 +33,7 @@ object OllamaService {
         try {
             val client = HttpClient.newHttpClient()
             val chatRequest = ChatRequest(
-                "llama3",
+                "llama3.1",
                 listOf(
                     ChatMessage(
                         "system",

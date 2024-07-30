@@ -12,7 +12,7 @@ class ChatCommand : SlashCommand {
             conversation.addMessage(
                 Message(
                     Role.ASSISTANT,
-                    "I can't access Ollama at ```http://localhost:11434```. You need to install it first and download the ```llama3``` model."
+                    "I can't access Ollama at ```http://localhost:11434```. You need to install it first and download the ```llama3.1``` model."
                 )
             )
             return conversation
