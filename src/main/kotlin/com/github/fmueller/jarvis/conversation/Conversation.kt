@@ -32,12 +32,13 @@ data class Message(
             val languageIdentifier = codeContext?.selected?.language?.id ?: "plaintext"
             """
             |${contentWithoutFlags()}
+            |
             |```$languageIdentifier
             |${codeContext!!.selected.content.trim()}
             |```
             """.trimMargin()
         } else {
-            content.trim()
+            contentWithoutFlags()
         }
 
     private fun shouldAddSelectedCode() =
@@ -45,10 +46,20 @@ data class Message(
 
     private fun hasCodeContext() = codeContext != null
 
-    private fun contentWithoutFlags() = content
+    // TODO should not remove flags for help message
+    private fun contentWithoutFlags() = closeOpenMarkdownCodeBlockAtTheEndOfContent()
         .replace("--selected-code", "")
         .replace("-s", "")
         .trim()
+
+    private fun closeOpenMarkdownCodeBlockAtTheEndOfContent(): String {
+        val tripleBackticksCount = content.split("```").size - 1
+        return if (tripleBackticksCount % 2 != 0) {
+            "$content\n```"
+        } else {
+            content
+        }
+    }
 }
 
 // as long as we don't have conversation history persistence,

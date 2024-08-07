@@ -18,11 +18,11 @@ import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import org.jdesktop.swingx.VerticalLayout
 import java.awt.Font
-import java.util.*
 import java.util.regex.Pattern
 import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
+import kotlin.math.min
 
 class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Disposable {
 
@@ -33,12 +33,14 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
     }
 
     sealed interface ParsedContent
-    private data class Content(val markdown: String) : ParsedContent
-    private data class Code(val languageId: String, val content: String) : ParsedContent
+    data class Content(val markdown: String) : ParsedContent
+    data class Code(val languageId: String, val content: String) : ParsedContent
 
     private val highlightedCodeHelper = SyntaxHighlightedCodeHelper(project)
 
-    private val parsed = mutableListOf<ParsedContent>()
+    // visibility for testing
+    val parsed = mutableListOf<ParsedContent>()
+
     // TODO dispose editors properly
     private val createdEditors = mutableListOf<Editor>()
 
@@ -74,43 +76,45 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
 
         val newParsedContent = parse(message.asMarkdown())
         var editorIndex = 0
-        for (i in newParsedContent.indices) {
-            if (i >= parsed.size) {
-                val newContent = newParsedContent.subList(i, newParsedContent.size)
-                parsed.addAll(newContent)
-                render(newContent)
-                break
-            }
 
-            val old = parsed[i]
-            val new = newParsedContent[i]
+        synchronized(treeLock) {
+            for (i in newParsedContent.indices) {
+                if (i >= parsed.size) {
+                    val newContent = newParsedContent.subList(i, newParsedContent.size)
+                    parsed.addAll(newContent)
+                    render(newContent)
+                    break
+                }
 
-            if (new is Code) {
-                editorIndex++
-            }
+                val old = parsed[i]
+                val new = newParsedContent[i]
 
-            if (i == parsed.lastIndex && i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
-                synchronized(treeLock) {
+                if (new is Code) {
+                    editorIndex++
+                }
+
+                if (i == parsed.lastIndex && i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
                     when (old) {
-                        is Content -> getComponent(Math.min(componentCount - 1, i + 1)).let {
+                        is Content -> getComponent(min(componentCount - 1, i + 1)).let {
                             (it as JEditorPane).text = markdownToHtml((new as Content).markdown)
                         }
 
-                        is Code -> {
-                            getComponent(Math.min(componentCount - 1, i + 1)).let { createdEditors[editorIndex - 1].document.setText((new as Code).content) }
+                        is Code -> getComponent(min(componentCount - 1, i + 1)).let {
+                            // TODO add test for incomplete code block, e.g. an empty one
+                            createdEditors[editorIndex - 1].document.setText((new as Code).content)
                         }
                     }
+                    continue
                 }
-                continue
-            }
 
-            if (isDifferentParsedContent(old, new)) {
-                val newContent = newParsedContent.subList(i, newParsedContent.size)
-                parsed.subList(i, parsed.size).clear()
-                parsed.addAll(newContent)
-                removeComponentsFromIndex(i + 1)
-                render(newContent)
-                break
+                if (isDifferentParsedContent(old, new)) {
+                    val newContent = newParsedContent.subList(i, newParsedContent.size)
+                    parsed.subList(i, parsed.size).clear()
+                    parsed.addAll(newContent)
+                    removeComponentsFromIndex(i + 1)
+                    render(newContent)
+                    break
+                }
             }
         }
     }
@@ -172,7 +176,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             }
 
             // Add syntax-highlighted code
-            val languageId = matcher.group(1)?.uppercase(Locale.getDefault())
+            val languageId = matcher.group(1)?.lowercase()
             val code = matcher.group(2)
             parsed.add(Code(languageId ?: "plaintext", code))
 
@@ -260,10 +264,8 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
     }
 
     private fun removeComponentsFromIndex(index: Int) {
-        synchronized(treeLock) {
-            for (i in componentCount - 1 downTo index) {
-                remove(i)
-            }
+        for (i in componentCount - 1 downTo index) {
+            remove(i)
         }
     }
 }
