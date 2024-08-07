@@ -2,6 +2,7 @@ package com.github.fmueller.jarvis.conversation;
 
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.TextAttributesKey
@@ -78,42 +79,45 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         var editorIndex = 0
 
         synchronized(treeLock) {
-            for (i in newParsedContent.indices) {
-                if (i >= parsed.size) {
-                    val newContent = newParsedContent.subList(i, newParsedContent.size)
-                    parsed.addAll(newContent)
-                    render(newContent)
-                    break
-                }
-
-                val old = parsed[i]
-                val new = newParsedContent[i]
-
-                if (new is Code) {
-                    editorIndex++
-                }
-
-                if (i == parsed.lastIndex && i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
-                    when (old) {
-                        is Content -> getComponent(min(componentCount - 1, i + 1)).let {
-                            (it as JEditorPane).text = markdownToHtml((new as Content).markdown)
-                        }
-
-                        is Code -> getComponent(min(componentCount - 1, i + 1)).let {
-                            // TODO add test for incomplete code block, e.g. an empty one
-                            createdEditors[editorIndex - 1].document.setText((new as Code).content)
-                        }
+            // TODO when there is a code block in the beginning, the first words are updated but then it stops...
+            ApplicationManager.getApplication().runWriteAction {
+                for (i in newParsedContent.indices) {
+                    if (i >= parsed.size) {
+                        val newContent = newParsedContent.subList(i, newParsedContent.size)
+                        parsed.addAll(newContent)
+                        render(newContent)
+                        break
                     }
-                    continue
-                }
 
-                if (isDifferentParsedContent(old, new)) {
-                    val newContent = newParsedContent.subList(i, newParsedContent.size)
-                    parsed.subList(i, parsed.size).clear()
-                    parsed.addAll(newContent)
-                    removeComponentsFromIndex(i + 1)
-                    render(newContent)
-                    break
+                    val old = parsed[i]
+                    val new = newParsedContent[i]
+
+                    if (new is Code) {
+                        editorIndex++
+                    }
+
+                    if (i == parsed.lastIndex && isUpdatableParsedContent(old, new)) {
+                        when (old) {
+                            is Content -> getComponent(min(componentCount - 1, i + 1)).let {
+                                (it as JEditorPane).text = markdownToHtml((new as Content).markdown)
+                            }
+
+                            is Code -> getComponent(min(componentCount - 1, i + 1)).let {
+                                createdEditors[editorIndex - 1].document.setText((new as Code).content)
+                            }
+                        }
+                        continue
+                    }
+
+                    if (isDifferentParsedContent(old, new)) {
+                        val newContent = newParsedContent.subList(i, newParsedContent.size)
+                        parsed.subList(i, parsed.size).clear()
+                        parsed.addAll(newContent)
+                        // TODO if editor component is removed, call dispose on it
+                        removeComponentsFromIndex(i + 1)
+                        render(newContent)
+                        break
+                    }
                 }
             }
         }
@@ -247,6 +251,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
                 viewport.view.background = outerPanelBackground
                 border = BorderFactory.createEmptyBorder(10, 5, 10, 5)
             })
+            createdEditors.add(editor)
         } else {
             addNonCodeContent(code)
         }

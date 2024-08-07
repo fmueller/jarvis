@@ -66,5 +66,33 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("println(\"Hello, World!\")", parsedCode.content)
     }
 
-    // TODO test case with multiple new messages, simulating the streaming from the LLM
+    fun `test empty code block is rendered correctly as code block`() {
+        messagePanel.message = Message(Role.ASSISTANT, "```kotlin\n\n```")
+
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
+
+        val parsedCode = messagePanel.parsed[0] as MessagePanel.Code
+        assertEquals("kotlin", parsedCode.languageId)
+        assertEquals("", parsedCode.content)
+    }
+
+    fun `test multiple message updates`() {
+        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n")
+        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```")
+        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin")
+        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin\n")
+        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")")
+        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")\n```")
+        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")\n```\n\nWhat's next?")
+
+        assertEquals(3, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Content)
+        assertTrue(messagePanel.parsed[1] is MessagePanel.Code)
+        assertTrue(messagePanel.parsed[2] is MessagePanel.Content)
+
+        val parsedCode = messagePanel.parsed[1] as MessagePanel.Code
+        assertEquals("kotlin", parsedCode.languageId)
+        assertEquals("println(\"Hello, World!\")", parsedCode.content)
+    }
 }
