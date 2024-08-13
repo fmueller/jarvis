@@ -2,8 +2,6 @@ package com.github.fmueller.jarvis.conversation;
 
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
@@ -42,9 +40,6 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
     // visibility for testing
     val parsed = mutableListOf<ParsedContent>()
 
-    // TODO dispose editors properly
-    private val createdEditors = mutableListOf<Editor>()
-
     private var _message: Message = initialMessage
     var message: Message
         get() = _message
@@ -66,7 +61,6 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
 
     override fun dispose() {
         parsed.clear()
-        createdEditors.clear()
         highlightedCodeHelper.disposeAllEditors()
     }
 
@@ -76,48 +70,39 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         }
 
         val newParsedContent = parse(message.asMarkdown())
-        var editorIndex = 0
-
         synchronized(treeLock) {
-            // TODO when there is a code block in the beginning, the first words are updated but then it stops...
-            ApplicationManager.getApplication().runWriteAction {
-                for (i in newParsedContent.indices) {
-                    if (i >= parsed.size) {
-                        val newContent = newParsedContent.subList(i, newParsedContent.size)
-                        parsed.addAll(newContent)
-                        render(newContent)
-                        break
-                    }
+            for (i in newParsedContent.indices) {
+                if (i >= parsed.size) {
+                    val newContent = newParsedContent.subList(i, newParsedContent.size)
+                    parsed.addAll(newContent)
+                    render(newContent)
+                    break
+                }
 
-                    val old = parsed[i]
-                    val new = newParsedContent[i]
+                val old = parsed[i]
+                val new = newParsedContent[i]
 
-                    if (new is Code) {
-                        editorIndex++
-                    }
-
-                    if (i == parsed.lastIndex && isUpdatableParsedContent(old, new)) {
-                        when (old) {
-                            is Content -> getComponent(min(componentCount - 1, i + 1)).let {
-                                (it as JEditorPane).text = markdownToHtml((new as Content).markdown)
-                            }
-
-                            is Code -> getComponent(min(componentCount - 1, i + 1)).let {
-                                createdEditors[editorIndex - 1].document.setText((new as Code).content)
-                            }
+                if (i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
+                    when (old) {
+                        is Content -> getComponent(min(componentCount - 1, i + 1)).let {
+                            (it as JEditorPane).text = markdownToHtml((new as Content).markdown)
                         }
-                        continue
-                    }
 
-                    if (isDifferentParsedContent(old, new)) {
-                        val newContent = newParsedContent.subList(i, newParsedContent.size)
-                        parsed.subList(i, parsed.size).clear()
-                        parsed.addAll(newContent)
-                        // TODO if editor component is removed, call dispose on it
-                        removeComponentsFromIndex(i + 1)
-                        render(newContent)
-                        break
+                        is Code -> {
+                            remove(min(componentCount - 1, i + 1))
+                            addHighlightedCode((new as Code).languageId, new.content)
+                        }
                     }
+                    break
+                }
+
+                if (isDifferentParsedContent(old, new)) {
+                    val newContent = newParsedContent.subList(i, newParsedContent.size)
+                    parsed.subList(i, parsed.size).clear()
+                    parsed.addAll(newContent)
+                    removeAllComponentsAfter(i + 1)
+                    render(newContent)
+                    break
                 }
             }
         }
@@ -151,7 +136,6 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         }
 
         parsed.clear()
-        createdEditors.clear()
         removeAll()
         highlightedCodeHelper.disposeAllEditors()
 
@@ -251,7 +235,6 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
                 viewport.view.background = outerPanelBackground
                 border = BorderFactory.createEmptyBorder(10, 5, 10, 5)
             })
-            createdEditors.add(editor)
         } else {
             addNonCodeContent(code)
         }
@@ -268,7 +251,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         return HtmlRenderer.builder(options).build().render(parser.parse(text))
     }
 
-    private fun removeComponentsFromIndex(index: Int) {
+    private fun removeAllComponentsAfter(index: Int) {
         for (i in componentCount - 1 downTo index) {
             remove(i)
         }
