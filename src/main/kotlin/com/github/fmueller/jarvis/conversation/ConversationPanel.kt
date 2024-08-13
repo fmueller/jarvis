@@ -71,12 +71,14 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         if (update.isNotEmpty()) {
             if (updatePanel == null) {
                 updatePanel = MessagePanel(Message(Role.ASSISTANT, update), project)
+                Disposer.register(this, updatePanel!!)
                 panel.add(updatePanel)
             } else {
                 updatePanel!!.message = Message(Role.ASSISTANT, update)
             }
         } else if (updatePanel != null) {
             panel.remove(updatePanel)
+            updatePanel!!.dispose()
             updatePanel = null
         }
 
