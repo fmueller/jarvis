@@ -20,7 +20,6 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
     }
 
     fun getHighlightedEditor(languageId: String, code: String): Editor? {
-        // TODO test with some Kotlin code and see if the language is correctly detected
         val language = Language.findLanguageByID(languageId) ?: IgnoreLanguage.INSTANCE
         val fileType = language.associatedFileType ?: return null
 
