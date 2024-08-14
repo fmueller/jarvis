@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2024-08-14
+
+### Added
+
+- Streaming updates from the LLM
+- Sensible timeouts for the Ollama client
+
+### Changed
+
+- Use LLama 3.1 model
+
 ## [1.1.0] - 2024-07-12
 
 ### Added
