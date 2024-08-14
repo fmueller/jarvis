@@ -11,6 +11,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.time.Duration
 
 @Serializable
 private data class ChatMessage(val role: String, val content: String)
@@ -27,11 +28,14 @@ private data class ChatResponse(val message: ChatMessage)
 
 object OllamaService {
 
+    private val client = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(2))
+        .build()
+
     suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
         // TODO check if model is available
         // TODO if not, download model
         try {
-            val client = HttpClient.newHttpClient()
             val chatRequest = ChatRequest(
                 "llama3.1",
                 listOf(
@@ -54,6 +58,7 @@ object OllamaService {
             )
             val httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:11434/api/chat"))
+                .timeout(Duration.ofSeconds(5))
                 .POST(HttpRequest.BodyPublishers.ofString(Json.encodeToString(chatRequest)))
                 .build()
 
@@ -80,9 +85,9 @@ object OllamaService {
 
     fun isAvailable(): Boolean {
         return try {
-            val client = HttpClient.newHttpClient()
             val request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:11434"))
+                .timeout(Duration.ofSeconds(2))
                 .build()
 
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
