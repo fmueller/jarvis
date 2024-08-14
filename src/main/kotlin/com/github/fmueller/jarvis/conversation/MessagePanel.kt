@@ -2,6 +2,7 @@ package com.github.fmueller.jarvis.conversation;
 
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
@@ -21,7 +22,6 @@ import java.util.regex.Pattern
 import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
-import kotlin.math.min
 
 class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Disposable {
 
@@ -83,14 +83,18 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
                 val new = newParsedContent[i]
 
                 if (i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
-                    val positionLastComponent = min(componentCount - 1, i + 1)
                     when (old) {
-                        is Content -> getComponent(positionLastComponent).let {
+                        is Content -> getComponent(componentCount - 1).let {
                             (it as JEditorPane).text = markdownToHtml((new as Content).markdown)
                         }
 
                         is Code -> {
-                            remove(positionLastComponent)
+                            val lastComponent = getComponent(componentCount - 1)
+                            if (lastComponent is JBScrollPane && lastComponent.viewport.view is Editor) {
+                                val editor = lastComponent.viewport.view as Editor
+                                highlightedCodeHelper.disposeEditor(editor)
+                            }
+                            remove(componentCount - 1)
                             addHighlightedCode((new as Code).languageId, new.content)
                         }
                     }

@@ -52,6 +52,12 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
         return editor
     }
 
+    fun disposeEditor(editor: Editor) {
+        if (createdEditors.remove(editor)) {
+            EditorFactory.getInstance().releaseEditor(editor)
+        }
+    }
+
     fun disposeAllEditors() {
         createdEditors.forEach { EditorFactory.getInstance().releaseEditor(it) }
         createdEditors.clear()
