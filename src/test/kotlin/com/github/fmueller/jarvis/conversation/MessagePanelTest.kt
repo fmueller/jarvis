@@ -8,7 +8,7 @@ class MessagePanelTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        messagePanel = MessagePanel(Message(Role.ASSISTANT, "Hello, I am Jarvis."), project)
+        messagePanel = MessagePanel(Message.fromAssistant("Hello, I am Jarvis."), project)
     }
 
     override fun tearDown() {
@@ -23,13 +23,13 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test updating the message works`() {
-        messagePanel.message = Message(Role.ASSISTANT, "Hi")
+        messagePanel.message = Message.fromAssistant("Hi")
 
         assertEquals("Hi", messagePanel.message.content)
     }
 
     fun `test code block is rendered correctly`() {
-        messagePanel.message = Message(Role.ASSISTANT, "```kotlin\nprintln(\"Hello, World!\")\n```")
+        messagePanel.message = Message.fromAssistant("```kotlin\nprintln(\"Hello, World!\")\n```")
 
         assertEquals(1, messagePanel.parsed.size)
         assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
@@ -40,7 +40,8 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test multiple code blocks are rendered correctly`() {
-        messagePanel.message = Message(Role.ASSISTANT, "```kotlin\nprintln(\"Hello, World!\")\n```\n```java\nSystem.out.println(\"Hello, World!\")\n```")
+        messagePanel.message =
+            Message.fromAssistant("```kotlin\nprintln(\"Hello, World!\")\n```\n```java\nSystem.out.println(\"Hello, World!\")\n```")
 
         assertEquals(3, messagePanel.parsed.size)
         assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
@@ -56,7 +57,7 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test unclosed code block is rendered correctly as code block`() {
-        messagePanel.message = Message(Role.ASSISTANT, "```kotlin\nprintln(\"Hello, World!\")")
+        messagePanel.message = Message.fromAssistant("```kotlin\nprintln(\"Hello, World!\")")
 
         assertEquals(1, messagePanel.parsed.size)
         assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
@@ -67,7 +68,7 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test empty code block is rendered correctly as code block`() {
-        messagePanel.message = Message(Role.ASSISTANT, "```kotlin\n\n```")
+        messagePanel.message = Message.fromAssistant("```kotlin\n\n```")
 
         assertEquals(1, messagePanel.parsed.size)
         assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
@@ -78,13 +79,14 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test multiple message updates`() {
-        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n")
-        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```")
-        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin")
-        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin\n")
-        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")")
-        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")\n```")
-        messagePanel.message = Message(Role.ASSISTANT, "Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")\n```\n\nWhat's next?")
+        messagePanel.message = Message.fromAssistant("Hello World:\n\n")
+        messagePanel.message = Message.fromAssistant("Hello World:\n\n```")
+        messagePanel.message = Message.fromAssistant("Hello World:\n\n```kotlin")
+        messagePanel.message = Message.fromAssistant("Hello World:\n\n```kotlin\n")
+        messagePanel.message = Message.fromAssistant("Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")")
+        messagePanel.message = Message.fromAssistant("Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")\n```")
+        messagePanel.message =
+            Message.fromAssistant("Hello World:\n\n```kotlin\nprintln(\"Hello, World!\")\n```\n\nWhat's next?")
 
         assertEquals(3, messagePanel.parsed.size)
         assertTrue(messagePanel.parsed[0] is MessagePanel.Content)

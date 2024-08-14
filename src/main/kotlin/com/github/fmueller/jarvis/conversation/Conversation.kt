@@ -27,6 +27,26 @@ data class Message(
     val createdAt: LocalDateTime = LocalDateTime.now()
 ) {
 
+    companion object {
+
+        val HELP_MESSAGE = fromAssistant(
+            """
+                I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly, please install and run Ollama locally.
+                
+                Available commands:
+                
+                - ```/help``` or ```/?``` - Shows this help message
+                - ```/new``` - Starts a new conversation
+                
+                Available flags (just add them to your input message):
+                
+                - ```--selected-code``` or ```-s``` - Adds the selected code from your editor to the prompt
+                """.trimIndent()
+        )
+
+        fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
+    }
+
     fun asMarkdown(): String =
         if (shouldAddSelectedCode()) {
             val languageIdentifier = codeContext?.selected?.language?.id ?: "plaintext"
@@ -97,7 +117,7 @@ class Conversation : Disposable {
         clearMessageBeingGenerated()
         val oldMessages = ArrayList(_messages)
         _messages.clear()
-        _messages.add(Message(Role.ASSISTANT, "Hello! How can I help you?"))
+        _messages.add(Message.fromAssistant("Hello! How can I help you?"))
         propertyChangeSupport.firePropertyChange("messages", oldMessages, ArrayList(_messages))
     }
 

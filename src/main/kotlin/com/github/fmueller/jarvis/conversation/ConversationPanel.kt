@@ -64,17 +64,17 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             }
         }
 
-        conversation.addMessage(Message(Role.ASSISTANT, "Hello! How can I help you?"))
+        conversation.addMessage(Message.fromAssistant("Hello! How can I help you?"))
     }
 
     private fun updateMessageInProgress(update: String) {
         if (update.isNotEmpty()) {
             if (updatePanel == null) {
-                updatePanel = MessagePanel(Message(Role.ASSISTANT, update), project)
+                updatePanel = MessagePanel(Message.fromAssistant(update), project)
                 Disposer.register(this, updatePanel!!)
                 panel.add(updatePanel)
             } else {
-                updatePanel!!.message = Message(Role.ASSISTANT, update)
+                updatePanel!!.message = Message.fromAssistant(update)
             }
         } else if (updatePanel != null) {
             panel.remove(updatePanel)
