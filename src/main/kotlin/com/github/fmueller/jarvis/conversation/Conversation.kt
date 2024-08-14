@@ -31,17 +31,17 @@ data class Message(
 
         val HELP_MESSAGE = fromAssistant(
             """
-                I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly, please install and run Ollama locally.
-                
-                Available commands:
-                
-                - ```/help``` or ```/?``` - Shows this help message
-                - ```/new``` - Starts a new conversation
-                
-                Available flags (just add them to your input message):
-                
-                - ```--selected-code``` or ```-s``` - Adds the selected code from your editor to the prompt
-                """.trimIndent()
+            I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly, please install and run Ollama locally.
+            
+            Available commands:
+            
+            - ```/help``` or ```/?``` - Shows this help message
+            - ```/new``` - Starts a new conversation
+            
+            Available flags (just add them to your input message):
+            
+            - ```--selected-code``` or ```-s``` - Adds the selected code from your editor to the prompt
+            """.trimIndent()
         )
 
         fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
@@ -61,16 +61,20 @@ data class Message(
             contentWithoutFlags()
         }
 
-    private fun shouldAddSelectedCode() =
-        hasCodeContext() && (content.contains("--selected-code") || content.contains("-s"))
+    private fun shouldAddSelectedCode() = !isHelpMessage()
+            && hasCodeContext()
+            && (content.contains("--selected-code") || content.contains("-s"))
 
     private fun hasCodeContext() = codeContext != null
 
-    // TODO should not remove flags for help message
-    private fun contentWithoutFlags() = closeOpenMarkdownCodeBlockAtTheEndOfContent()
-        .replace("--selected-code", "")
-        .replace("-s", "")
-        .trim()
+    private fun isHelpMessage() = this == HELP_MESSAGE
+
+    private fun contentWithoutFlags() =
+        if (isHelpMessage()) content
+        else closeOpenMarkdownCodeBlockAtTheEndOfContent()
+            .replace("--selected-code", "")
+            .replace("-s", "")
+            .trim()
 
     private fun closeOpenMarkdownCodeBlockAtTheEndOfContent(): String {
         val tripleBackticksCount = content.split("```").size - 1
