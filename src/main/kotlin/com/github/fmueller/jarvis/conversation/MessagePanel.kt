@@ -83,13 +83,14 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
                 val new = newParsedContent[i]
 
                 if (i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
+                    val positionLastComponent = min(componentCount - 1, i + 1)
                     when (old) {
-                        is Content -> getComponent(min(componentCount - 1, i + 1)).let {
+                        is Content -> getComponent(positionLastComponent).let {
                             (it as JEditorPane).text = markdownToHtml((new as Content).markdown)
                         }
 
                         is Code -> {
-                            remove(min(componentCount - 1, i + 1))
+                            remove(positionLastComponent)
                             addHighlightedCode((new as Code).languageId, new.content)
                         }
                     }
