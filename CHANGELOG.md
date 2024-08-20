@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2024-08-20
+
+### Fixed
+
+- Compatibility with the latest Jetbrains Platform version
+
 ## [1.2.0] - 2024-08-14
 
 ### Added
