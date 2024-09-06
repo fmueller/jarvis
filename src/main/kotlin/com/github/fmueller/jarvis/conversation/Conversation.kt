@@ -104,6 +104,8 @@ class Conversation : Disposable {
         return SlashCommandParser.parse(message.content).run(this)
     }
 
+    fun getLastUserMessage(): Message? = _messages.lastOrNull { it.role == Role.USER }
+
     fun addToMessageBeingGenerated(text: String) {
         val old = _messageBeingGenerated.toString()
         _messageBeingGenerated.append(text)

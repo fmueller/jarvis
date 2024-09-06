@@ -1,6 +1,9 @@
 package com.github.fmueller.jarvis.ai
 
 import com.github.fmueller.jarvis.conversation.Conversation
+import dev.langchain4j.model.ollama.OllamaStreamingChatModel
+import dev.langchain4j.service.AiServices
+import dev.langchain4j.service.TokenStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -12,6 +15,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 @Serializable
 private data class ChatMessage(val role: String, val content: String)
@@ -28,22 +32,8 @@ private data class ChatResponse(val message: ChatMessage)
 
 object OllamaService {
 
-    private val client = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(2))
-        .build()
-
-    suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
-        // TODO check if model is available
-        // TODO if not, download model
-        try {
-            val chatRequest = ChatRequest(
-                "llama3.1",
-                listOf(
-                    ChatMessage(
-                        "system",
-                        // TODO is it better to reference the assistant by name or role?
-                        // TODO should I add something about putting the language identifier in the code block?
-                        """
+    // TODO should I add something about putting the language identifier in the code block?
+    private val systemMessage = """
                         You are Jarvis.
                         You are a helpful coding assistant on the level of an expert software developer.
                         You ask clarifying questions to understand the user's problem if you don't have enough information.
@@ -52,7 +42,51 @@ object OllamaService {
                         You format responses in Markdown.
                         You use paragraphs, lists, and code blocks to make your responses more readable.
                         """.trimIndent()
-                    )
+
+    private val client = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(2))
+        .build()
+
+    private interface Assistant {
+
+        fun chat(message: String): TokenStream
+    }
+
+    private val assistant = AiServices
+        .builder(Assistant::class.java)
+        .streamingChatLanguageModel(
+            OllamaStreamingChatModel.builder()
+                .baseUrl("http://localhost:11434")
+                .modelName("llama3.1")
+                .build()
+        )
+        .systemMessageProvider { chatMemoryId -> systemMessage }
+        .build()
+
+    suspend fun chatLangChain4J(conversation: Conversation): String = withContext(Dispatchers.IO) {
+        // TODO check if model is available
+        // TODO if not, download model
+
+        // TODO migration to LangChain4J: change to Kotlin Coroutines
+        // TODO migration to LangChain4J: add timeout handling
+        // TODO migration to LangChain4J: research how token limits work and context windows
+        // TODO migration to LangChain4J: research how chat memory is configured
+        val future = CompletableFuture<String>()
+        assistant
+            .chat(conversation.getLastUserMessage()?.content ?: "Tell me that there was not message provided.")
+            .onNext { update -> conversation.addToMessageBeingGenerated(update) }
+            .onComplete { response -> future.complete(response.content().text()) }
+            .onError { error -> future.complete("Error: ${error.message}") }
+            .start()
+        future.get()
+    }
+
+    suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
+        try {
+            val chatRequest = ChatRequest(
+                "llama3.1",
+                listOf(
+                    ChatMessage("system", systemMessage)
                 ) + conversation.messages.map { ChatMessage(it.role.toString(), it.asMarkdown()) },
                 true
             )
