@@ -1,6 +1,7 @@
 package com.github.fmueller.jarvis.ai
 
 import com.github.fmueller.jarvis.conversation.Conversation
+import dev.langchain4j.memory.chat.TokenWindowChatMemory
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
@@ -54,16 +55,11 @@ object OllamaService {
         fun chat(message: String): TokenStream
     }
 
-    private val assistant = AiServices
-        .builder(Assistant::class.java)
-        .streamingChatLanguageModel(
-            OllamaStreamingChatModel.builder()
-                .baseUrl("http://localhost:11434")
-                .modelName("llama3.1")
-                .build()
-        )
-        .systemMessageProvider { chatMemoryId -> systemMessage }
-        .build()
+    private var assistant = createAiService()
+
+    fun clearChatMemory() {
+        assistant = createAiService()
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun chatLangChain4J(conversation: Conversation): String = withContext(Dispatchers.IO) {
@@ -71,9 +67,6 @@ object OllamaService {
         // TODO if not, download model
 
         // TODO migration to LangChain4J: add timeout handling
-        // TODO migration to LangChain4J: research how token limits work and context windows
-        // TODO migration to LangChain4J: research how chat memory is configured
-
         suspendCancellableCoroutine<String> { continuation ->
             assistant
                 .chat(conversation.getLastUserMessage()?.content ?: "Tell me that there was no message provided.")
@@ -136,5 +129,23 @@ object OllamaService {
         } catch (e: Exception) {
             false
         }
+    }
+
+    private fun createAiService(): Assistant {
+        return AiServices
+            .builder(Assistant::class.java)
+            .streamingChatLanguageModel(
+                OllamaStreamingChatModel.builder()
+                    .baseUrl("http://localhost:11434")
+                    .modelName("llama3.1")
+                    .build()
+            )
+            .systemMessageProvider { chatMemoryId -> systemMessage }
+            .chatMemory(
+                TokenWindowChatMemory.builder()
+                    .maxTokens(128_000, SimpleTokenizer())
+                    .build()
+            )
+            .build()
     }
 }
