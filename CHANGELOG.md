@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.4.0] - 2024-09-11
+
+### Added
+
+- Moving token window to respect the context limit
+
+### Changed
+
+- Use LangChain4j as the default LLM framework
+
 ## [1.3.0] - 2024-08-20
 
 ### Fixed
