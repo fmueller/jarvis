@@ -9,29 +9,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import kotlin.coroutines.resumeWithException
-
-@Serializable
-private data class ChatMessage(val role: String, val content: String)
-
-@Serializable
-private data class ChatRequest(
-    val model: String,
-    val messages: List<ChatMessage>,
-    val stream: Boolean
-)
-
-@Serializable
-private data class ChatResponse(val message: ChatMessage)
 
 object OllamaService {
 
@@ -62,58 +44,36 @@ object OllamaService {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    suspend fun chatLangChain4J(conversation: Conversation): String = withContext(Dispatchers.IO) {
+    suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
         // TODO check if model is available
         // TODO if not, download model
 
-        // TODO migration to LangChain4J: add timeout handling
-        suspendCancellableCoroutine<String> { continuation ->
-            assistant
-                .chat(conversation.getLastUserMessage()?.content ?: "Tell me that there was no message provided.")
-                .onNext { update -> conversation.addToMessageBeingGenerated(update) }
-                .onComplete { response -> continuation.resume(response.content().text()) { t -> /* noop */ } }
-                .onError { error -> continuation.resumeWithException(Exception("Error: ${error.message}")) }
-                .start()
-
-            continuation.invokeOnCancellation {
-                // TODO when LangChain4j implemented AbortController, call it here
-            }
-        }
-    }
-
-    suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
+        val responseInFlight = StringBuilder()
         try {
-            val chatRequest = ChatRequest(
-                "llama3.1",
-                listOf(
-                    ChatMessage("system", systemMessage)
-                ) + conversation.messages.map { ChatMessage(it.role.toString(), it.asMarkdown()) },
-                true
-            )
-            val httpRequest = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:11434/api/chat"))
-                .timeout(Duration.ofSeconds(5))
-                .POST(HttpRequest.BodyPublishers.ofString(Json.encodeToString(chatRequest)))
-                .build()
+            suspendCancellableCoroutine<String> { continuation ->
+                assistant
+                    .chat(conversation.getLastUserMessage()?.content ?: "Tell me that there was no message provided.")
+                    .onNext { update ->
+                        responseInFlight.append(update)
+                        conversation.addToMessageBeingGenerated(update)
+                    }
+                    .onComplete { response -> continuation.resume(response.content().text()) { /* noop */ } }
+                    .onError { error -> continuation.cancel(Exception(error.message)) }
+                    .start()
 
-            val json = Json { ignoreUnknownKeys = true }
-            val response = StringBuilder()
-            client.send(httpRequest) {
-                HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofLines(Charsets.UTF_8)) { lines ->
-                    lines
-                        .filter { line -> line.isNotEmpty() }
-                        .forEach { line ->
-                            run {
-                                val update = json.decodeFromString<ChatResponse>(line).message.content
-                                response.append(update)
-                                conversation.addToMessageBeingGenerated(update)
-                            }
-                        }
+                continuation.invokeOnCancellation {
+                    // TODO when LangChain4j implemented AbortController, call it here
                 }
             }
-            response.toString()
         } catch (e: Exception) {
-            "Error: ${e.message}"
+            responseInFlight
+                .appendLine()
+                .appendLine()
+                .appendLine("An error occurred while processing the message.")
+                .appendLine()
+                .append("Error: ")
+                .append(e.message)
+                .toString()
         }
     }
 
@@ -136,6 +96,7 @@ object OllamaService {
             .builder(Assistant::class.java)
             .streamingChatLanguageModel(
                 OllamaStreamingChatModel.builder()
+                    .timeout(Duration.ofMinutes(5))
                     .baseUrl("http://localhost:11434")
                     .modelName("llama3.1")
                     .build()
