@@ -37,44 +37,35 @@ data class Message(
             
             - ```/help``` or ```/?``` - Shows this help message
             - ```/new``` - Starts a new conversation
-            
-            Available flags (just add them to your input message):
-            
-            - ```--selected-code``` or ```-s``` - Adds the selected code from your editor to the prompt
             """.trimIndent()
         )
 
         fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
     }
 
-    fun asMarkdown(): String =
+    fun contentWithCodeContext(): String =
         if (shouldAddSelectedCode()) {
             val languageIdentifier = codeContext?.selected?.language?.id ?: "plaintext"
             """
-            |${contentWithoutFlags()}
+            |${contentWithClosedTrailingCodeBlock()}
             |
             |```$languageIdentifier
             |${codeContext!!.selected.content.trim()}
             |```
             """.trimMargin()
         } else {
-            contentWithoutFlags()
+            contentWithClosedTrailingCodeBlock()
         }
 
-    private fun shouldAddSelectedCode() = !isHelpMessage()
-            && hasCodeContext()
-            && (content.contains("--selected-code") || content.contains("-s"))
+    fun contentWithClosedTrailingCodeBlock() =
+        if (isHelpMessage()) content.trim()
+        else closeOpenMarkdownCodeBlockAtTheEndOfContent().trim()
+
+    private fun shouldAddSelectedCode() = !isHelpMessage() && hasCodeContext()
 
     private fun hasCodeContext() = codeContext != null
 
     private fun isHelpMessage() = this == HELP_MESSAGE
-
-    private fun contentWithoutFlags() =
-        if (isHelpMessage()) content
-        else closeOpenMarkdownCodeBlockAtTheEndOfContent()
-            .replace("--selected-code", "")
-            .replace("-s", "")
-            .trim()
 
     private fun closeOpenMarkdownCodeBlockAtTheEndOfContent(): String {
         val tripleBackticksCount = content.split("```").size - 1

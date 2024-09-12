@@ -69,7 +69,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             return
         }
 
-        val newParsedContent = parse(message.asMarkdown())
+        val newParsedContent = parse(message.contentWithClosedTrailingCodeBlock())
         synchronized(treeLock) {
             for (i in newParsedContent.indices) {
                 if (i >= parsed.size) {

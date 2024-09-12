@@ -52,7 +52,7 @@ object OllamaService {
         try {
             suspendCancellableCoroutine<String> { continuation ->
                 assistant
-                    .chat(conversation.getLastUserMessage()?.content ?: "Tell me that there was no message provided.")
+                    .chat(conversation.getLastUserMessage()?.contentWithCodeContext() ?: "Tell me that there was no message provided.")
                     .onNext { update ->
                         responseInFlight.append(update)
                         conversation.addToMessageBeingGenerated(update)
