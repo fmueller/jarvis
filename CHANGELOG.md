@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.5.0] - 2024-09-12
+
+### Added
+
+- Plain chat command to send a message without code context
+
+### Changed
+
+- Always add selected code to the prompt, even if no flag is provided
+
 ## [1.4.0] - 2024-09-11
 
 ### Added
