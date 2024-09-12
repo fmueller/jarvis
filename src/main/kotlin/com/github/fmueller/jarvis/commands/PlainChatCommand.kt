@@ -4,7 +4,7 @@ import com.github.fmueller.jarvis.ai.OllamaService
 import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.Message
 
-class ChatCommand : SlashCommand {
+class PlainChatCommand : SlashCommand {
 
     override suspend fun run(conversation: Conversation): Conversation {
         if (!OllamaService.isAvailable()) {
@@ -14,7 +14,7 @@ class ChatCommand : SlashCommand {
             return conversation
         }
 
-        val response = OllamaService.chat(conversation, true).trim()
+        val response = OllamaService.chat(conversation, false).trim()
         conversation.addMessage(Message.fromAssistant(response))
         return conversation
     }

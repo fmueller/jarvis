@@ -44,15 +44,22 @@ object OllamaService {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    suspend fun chat(conversation: Conversation): String = withContext(Dispatchers.IO) {
+    suspend fun chat(conversation: Conversation, useCodeContext: Boolean): String = withContext(Dispatchers.IO) {
         // TODO check if model is available
         // TODO if not, download model
+
+        var lastUserMessage = if (conversation.getLastUserMessage() != null)
+            if (useCodeContext)
+                conversation.getLastUserMessage()!!.contentWithCodeContext()
+            else
+                conversation.getLastUserMessage()!!.contentWithClosedTrailingCodeBlock()
+        else "Tell me that there was no message provided."
 
         val responseInFlight = StringBuilder()
         try {
             suspendCancellableCoroutine<String> { continuation ->
                 assistant
-                    .chat(conversation.getLastUserMessage()?.contentWithCodeContext() ?: "Tell me that there was no message provided.")
+                    .chat(lastUserMessage.removePrefix("/plain "))
                     .onNext { update ->
                         responseInFlight.append(update)
                         conversation.addToMessageBeingGenerated(update)

@@ -12,6 +12,10 @@ object SlashCommandParser {
             return NewConversationCommand()
         }
 
+        if (trimmedMessage.startsWith("/plain ")) {
+            return PlainChatCommand()
+        }
+
         return ChatCommand()
     }
 }
