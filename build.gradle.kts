@@ -25,7 +25,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.2")
     implementation(libs.flexmark)
     implementation("dev.langchain4j:langchain4j:0.34.0")
-    implementation("dev.langchain4j:langchain4j-ollama:0.34.0")
+    implementation("dev.langchain4j:langchain4j-ollama:0.35.0")
 }
 
 kotlin {
