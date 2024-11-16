@@ -19,10 +19,10 @@ object CodeContextHelper {
                     psiFile?.language
                 } else null
 
-                return CodeContext(Code(selection.selectedText!!, language ?: Language.ANY))
+                return CodeContext(project.name, Code(selection.selectedText!!, language ?: Language.ANY))
             }
         }
 
-        return null
+        return CodeContext(project.name)
     }
 }

@@ -18,7 +18,7 @@ enum class Role {
 
 data class Code(val content: String, val language: Language = Language.ANY)
 
-data class CodeContext(val selected: Code)
+data class CodeContext(val projectName: String, val selected: Code? = null)
 
 data class Message(
     val role: Role,
@@ -44,25 +44,41 @@ data class Message(
         fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
     }
 
-    fun contentWithCodeContext(): String =
-        if (shouldAddSelectedCode()) {
-            val languageIdentifier = codeContext?.selected?.language?.id ?: "plaintext"
-            """
-            |${contentWithClosedTrailingCodeBlock()}
-            |
-            |```$languageIdentifier
-            |${codeContext!!.selected.content.trim()}
-            |```
-            """.trimMargin()
-        } else {
-            contentWithClosedTrailingCodeBlock()
+    fun contentWithCodeContext(): String {
+        if (!hasCodeContext()) {
+            return contentWithClosedTrailingCodeBlock()
         }
+
+        val projectPrefix = "My project in the IDE is called ${codeContext!!.projectName}."
+        if (shouldAddSelectedCode()) {
+            val languageIdentifier = codeContext.selected?.language?.id ?: "plaintext"
+            return """
+                   |${contentWithClosedTrailingCodeBlock()}
+                   |
+                   |$projectPrefix
+                   |
+                   |This is my selected code:
+                   |
+                   |```$languageIdentifier
+                   |${codeContext.selected!!.content.trim()}
+                   |```
+                   """.trimMargin()
+        } else {
+            return """
+                   |${contentWithClosedTrailingCodeBlock()}
+                   |
+                   |$projectPrefix
+                   """.trimMargin()
+        }
+    }
 
     fun contentWithClosedTrailingCodeBlock() =
         if (isHelpMessage()) content.trim()
         else closeOpenMarkdownCodeBlockAtTheEndOfContent().trim()
 
-    private fun shouldAddSelectedCode() = !isHelpMessage() && hasCodeContext()
+    private fun shouldAddSelectedCode() = !isHelpMessage() && hasSelectedCode()
+
+    private fun hasSelectedCode() = hasCodeContext() && codeContext!!.selected != null
 
     private fun hasCodeContext() = codeContext != null
 
