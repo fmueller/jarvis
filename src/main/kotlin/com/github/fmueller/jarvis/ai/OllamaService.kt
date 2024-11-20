@@ -123,8 +123,8 @@ object OllamaService {
         fun chat(message: String): TokenStream
     }
 
-    private var assistant = createAiService()
     private var modelName = "llama3.1"
+    private var assistant = createAiService()
 
     fun clearChatMemory() {
         assistant = createAiService()
