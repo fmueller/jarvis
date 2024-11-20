@@ -22,6 +22,7 @@ class SimpleTokenizer : Tokenizer {
         return estimateTokenCountInText(getText(message)) + 2
     }
 
+    @SuppressWarnings("deprecation")
     private fun getText(message: ChatMessage?): String {
         return when (message) {
             is AiMessage -> message.text()

@@ -64,6 +64,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         highlightedCodeHelper.disposeAllEditors()
     }
 
+    @Suppress("SENSELESS_COMPARISON") // message can be null
     private fun updatePanel() {
         if (message == null) {
             return
