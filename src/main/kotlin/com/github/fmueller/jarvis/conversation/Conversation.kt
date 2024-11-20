@@ -41,6 +41,7 @@ data class Message(
             - ```/help``` or ```/?``` - Shows this help message
             - ```/new``` - Starts a new conversation
             - ```/plain``` - Sends a chat message without code context
+            - ```/model <modelName>``` - Changes the model to use ('llama3.1' or 'llama3.2')
             """.trimIndent()
         )
 
