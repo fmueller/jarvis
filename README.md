@@ -15,7 +15,8 @@ local LLMs only. To achieve this, it is integrating with Ollama.
 
 1. Install and run [Ollama](https://ollama.com)
 2. Download LLama 3.1 8B model in Ollama: ```ollama run llama3.1```
-3. Install Jarvis plugin in your Jetbrains IDE:
+3. Download LLama 3.2 8B model in Ollama: ```ollama run llama3.2```
+4. Install Jarvis plugin in your Jetbrains IDE:
    - Using the IDE built-in plugin system: <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "jarvis"</kbd> >
      <kbd>Install</kbd>
    - Manually: Download the [latest release](https://github.com/fmueller/jarvis/releases/latest) and install it manually using
@@ -24,3 +25,12 @@ local LLMs only. To achieve this, it is integrating with Ollama.
 ## License
 
 This project is licensed under the [MIT](LICENSE)
+
+## Help
+
+Available commands:
+
+- ```/help``` or ```/?``` - Shows this help message
+- ```/new``` - Starts a new conversation
+- ```/plain``` - Sends a chat message without code context
+- ```/model <modelName>``` - Changes the model to use ('llama3.1' or 'llama3.2')

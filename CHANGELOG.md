@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- Support for Llama 3.2 model
+- New `/model <modelName>` command to switch between 'llama3.1' and 'llama3.2'
+
 ## [1.5.0] - 2024-09-12
 
 ### Added
