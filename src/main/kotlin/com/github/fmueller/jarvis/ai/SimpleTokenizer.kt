@@ -2,7 +2,10 @@ package com.github.fmueller.jarvis.ai
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest
 import dev.langchain4j.agent.tool.ToolSpecification
+import dev.langchain4j.data.message.AiMessage
 import dev.langchain4j.data.message.ChatMessage
+import dev.langchain4j.data.message.SystemMessage
+import dev.langchain4j.data.message.UserMessage
 import dev.langchain4j.model.Tokenizer
 import kotlin.math.roundToInt
 
@@ -16,7 +19,16 @@ class SimpleTokenizer : Tokenizer {
     }
 
     override fun estimateTokenCountInMessage(message: ChatMessage?): Int {
-        return estimateTokenCountInText(message?.text() ?: "") + 2
+        return estimateTokenCountInText(getText(message)) + 2
+    }
+
+    private fun getText(message: ChatMessage?): String {
+        return when (message) {
+            is AiMessage -> message.text()
+            is SystemMessage -> message.text()
+            is UserMessage -> if (message.hasSingleText()) message.singleText() else ""
+            else -> ""
+        }
     }
 
     override fun estimateTokenCountInMessages(messages: Iterable<ChatMessage?>?): Int {

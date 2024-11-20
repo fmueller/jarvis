@@ -23,9 +23,9 @@ object OllamaService {
     // TODO add something about selected code has higher priority than the open files or references
     private val systemPrompt = """
                     You are Jarvis, an intelligent and helpful coding assistant on the level of an expert software developer. You assist users by providing code completions, debugging tips, explanations, and suggestions in various programming languages. Your responses are clear, concise, and directly address the user's needs.
-                    
+
                     All your responses should be formatted in Markdown. To improve readability, use paragraphs, lists, and headlines where appropriate.
-                    
+
                     - Follow coding best practices for readability, efficiency, and security.
                     - Use appropriate code blocks with syntax highlighting.
                     - Include comments and brief explanations where necessary.
@@ -134,7 +134,7 @@ object OllamaService {
         // TODO check if model is available
         // TODO if not, download model
 
-        var nextMessagePrompt =
+        val nextMessagePrompt =
             if (conversation.getLastUserMessage() != null) {
                 val lastUserMessage = conversation.getLastUserMessage()!!
                 """
@@ -144,7 +144,7 @@ object OllamaService {
                 |
                 |[Code Context]:
                 |
-                |${getCodeContextPrompt(lastUserMessage.codeContext, useCodeContext)}
+                |${getCodeContextPrompt(lastUserMessage.codeContext, !lastUserMessage.isHelpMessage() && useCodeContext)}
                 |
                 |[Assistant]: """.trimMargin()
             } else {
@@ -153,7 +153,7 @@ object OllamaService {
 
         val responseInFlight = StringBuilder()
         try {
-            suspendCancellableCoroutine<String> { continuation ->
+            suspendCancellableCoroutine { continuation ->
                 assistant
                     .chat(nextMessagePrompt)
                     .onNext { update ->

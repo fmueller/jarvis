@@ -8,7 +8,7 @@ import com.intellij.psi.PsiManager
 
 object CodeContextHelper {
 
-    fun getCodeContext(project: Project): CodeContext? {
+    fun getCodeContext(project: Project): CodeContext {
         val editor = FileEditorManager.getInstance(project).selectedTextEditor
         if (editor != null) {
             val selection = editor.selectionModel

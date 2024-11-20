@@ -1,4 +1,4 @@
-package com.github.fmueller.jarvis.conversation;
+package com.github.fmueller.jarvis.conversation
 
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
 import com.intellij.openapi.Disposable
