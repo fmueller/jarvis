@@ -124,6 +124,7 @@ object OllamaService {
     }
 
     private var assistant = createAiService()
+    private var modelName = "llama3.1"
 
     fun clearChatMemory() {
         assistant = createAiService()
@@ -214,7 +215,7 @@ object OllamaService {
                 OllamaStreamingChatModel.builder()
                     .timeout(Duration.ofMinutes(5))
                     .baseUrl("http://localhost:11434")
-                    .modelName("llama3.1")
+                    .modelName(modelName)
                     .build()
             )
             .systemMessageProvider { chatMemoryId -> systemPrompt }
@@ -224,5 +225,10 @@ object OllamaService {
                     .build()
             )
             .build()
+    }
+
+    fun setModel(newModelName: String) {
+        modelName = newModelName
+        assistant = createAiService()
     }
 }
