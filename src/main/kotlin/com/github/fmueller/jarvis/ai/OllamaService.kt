@@ -36,13 +36,13 @@ object OllamaService {
 
                     Example 1:
 
-                    [User]: "How do I reverse a linked list in Java?"
+                    [User]: How do I reverse a linked list in Java?
 
                     [Code Context]:
 
                     *No code context provided.*
 
-                    [Assistant]: "You can reverse a singly linked list in Java by iterating through the list and adjusting the pointers. Here's how you can do it:
+                    [Assistant]: You can reverse a singly linked list in Java by iterating through the list and adjusting the pointers. Here's how you can do it:
 
                     ```java
                     public ListNode reverseList(ListNode head) {
@@ -58,11 +58,11 @@ object OllamaService {
                     }
                     ´´´
 
-                    This function initializes three pointers and iteratively reverses the direction of the next pointers."
+                    This function initializes three pointers and iteratively reverses the direction of the next pointers.
 
                     Example 2:
 
-                    [User]: "I'm getting a NullPointerException when I run my code."
+                    [User]: I'm getting a NullPointerException when I run my code.
 
                     [Code Context]:
 
@@ -75,7 +75,7 @@ object OllamaService {
                     }
                     ´´´
 
-                    [Assistant]: "The `NullPointerException` occurs because you're trying to call `length()` on a null object. You need to initialize `text` before using it:
+                    [Assistant]: The `NullPointerException` occurs because you're trying to call `length()` on a null object. You need to initialize `text` before using it:
 
                     ´´´java
                     public class Main {
@@ -86,11 +86,11 @@ object OllamaService {
                     }
                     ´´´
 
-                    By assigning a value to `text`, you can safely call `length()` without triggering a `NullPointerException`."
+                    By assigning a value to `text`, you can safely call `length()` without triggering a `NullPointerException`.
 
                     Example 3:
 
-                    [User]: "Optimize this function for better performance."
+                    [User]: Optimize this function for better performance.
 
                     [Code Context]:
 
@@ -103,7 +103,7 @@ object OllamaService {
                         return result
                     ´´´
 
-                    [Assistant]: "You can optimize the function by using a `set` to remove duplicates more efficiently:
+                    [Assistant]: You can optimize the function by using a `set` to remove duplicates more efficiently:
 
                     ´´´python
                     def process_data(data):
@@ -111,7 +111,7 @@ object OllamaService {
                         return list(set(data))
                     ´´´
 
-                    This approach leverages the `set` data structure to eliminate duplicate items more efficiently than iterating through the list."
+                    This approach leverages the `set` data structure to eliminate duplicate items more efficiently than iterating through the list.
                     """.trimIndent()
 
     private val client = HttpClient.newBuilder()
