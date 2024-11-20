@@ -50,7 +50,11 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             if (it.propertyName == "messages") {
                 SwingUtilities.invokeLater {
                     isUserScrolling = false
-                    update(it.newValue as List<Message>)
+                    val newMessages = (it.newValue as? List<*>)?.filterIsInstance<Message>()
+                    if (newMessages == null) {
+                        throw IllegalStateException("Property 'messages' must be a list of messages")
+                    }
+                    update(newMessages)
                 }
             }
         }
