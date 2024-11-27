@@ -36,6 +36,8 @@ data class Message(
             """
             I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly, please install and run Ollama locally.
             
+            Furthermore, please download LLama 3.1 and 3.2 via Ollama.
+            
             Available commands:
             
             - ```/help``` or ```/?``` - Shows this help message
