@@ -84,6 +84,8 @@ class Conversation : Disposable {
 
     fun getLastUserMessage(): Message? = _messages.lastOrNull { it.role == Role.USER }
 
+    fun isFirstUserMessage(): Boolean = _messages.count { it.role == Role.USER && !it.content.startsWith("/model ") } == 1
+
     fun addToMessageBeingGenerated(text: String) {
         val old = _messageBeingGenerated.toString()
         _messageBeingGenerated.append(text)

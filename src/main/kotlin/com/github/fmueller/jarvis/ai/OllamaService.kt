@@ -19,7 +19,6 @@ import java.time.Duration
 
 object OllamaService {
 
-    // TODO add project info to system prompt instead of adding it to each user message
     // TODO add something about selected code has higher priority than the open files or references
     private val systemPrompt = """
                     You are Jarvis, an intelligent and helpful coding assistant on the level of an expert software developer. You assist users by providing code completions, debugging tips, explanations, and suggestions in various programming languages. Your responses are clear, concise, and directly address the user's needs.
@@ -143,14 +142,22 @@ object OllamaService {
         // TODO check if model is available
         // TODO if not, download model
 
+        val projectPromptPart =
+            if (conversation.isFirstUserMessage())
+                """
+                |
+                |Project: ${conversation.getLastUserMessage()!!.codeContext!!.projectName}
+                |
+                """.trimMargin()
+            else
+                ""
+
         val nextMessagePrompt =
             if (conversation.getLastUserMessage() != null) {
                 val lastUserMessage = conversation.getLastUserMessage()!!
                 """
                 |[User]: ${lastUserMessage.contentWithClosedTrailingCodeBlock().removePrefix("/plain ")}
-                |
-                |My project in the IDE is called ${lastUserMessage.codeContext!!.projectName}.
-                |
+                |$projectPromptPart
                 |[Code Context]:
                 |
                 |${getCodeContextPrompt(lastUserMessage.codeContext, !lastUserMessage.isHelpMessage() && useCodeContext)}
