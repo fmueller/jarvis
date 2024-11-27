@@ -122,7 +122,7 @@ object OllamaService {
         fun chat(message: String): TokenStream
     }
 
-    var modelName: String = "llama3.1"
+    var modelName: String = "llama3.2"
         set(value) {
             if (value != "llama3.1" && value != "llama3.2") {
                 throw IllegalArgumentException("Invalid model name: $value")
