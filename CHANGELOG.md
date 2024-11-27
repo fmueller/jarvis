@@ -2,9 +2,14 @@
 
 ## [Unreleased]
 
+## [1.6.0] - 2024-11-27
+
 ### Added
 
 - Support for Llama 3.2 model
+- Set Llama 3.2 as the default model
+- New system prompt to improve quality of generated responses
+- Add project name to the first user message in a conversation
 - New `/model <modelName>` command to switch between 'llama3.1' and 'llama3.2'
 
 ## [1.5.0] - 2024-09-12
