@@ -16,6 +16,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import kotlin.coroutines.resume
 
 object OllamaService {
 
@@ -172,11 +173,11 @@ object OllamaService {
             suspendCancellableCoroutine { continuation ->
                 assistant
                     .chat(nextMessagePrompt)
-                    .onNext { update ->
+                    .onPartialResponse { update ->
                         responseInFlight.append(update)
                         conversation.addToMessageBeingGenerated(update)
                     }
-                    .onComplete { response -> continuation.resume(response.content().text()) { /* noop */ } }
+                    .onCompleteResponse { response -> continuation.resume(response.aiMessage().text()) { /* noop */ } }
                     .onError { error -> continuation.cancel(Exception(error.message)) }
                     .start()
 
@@ -226,7 +227,7 @@ object OllamaService {
     private fun createAiService(): Assistant {
         return AiServices
             .builder(Assistant::class.java)
-            .streamingChatLanguageModel(
+            .streamingChatModel(
                 OllamaStreamingChatModel.builder()
                     .timeout(Duration.ofMinutes(5))
                     .baseUrl("http://localhost:11434")
