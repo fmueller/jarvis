@@ -36,7 +36,7 @@
 
 ### Fixed
 
-- Compatibility with the latest Jetbrains Platform version
+- Compatibility with the latest JetBrains Platform version
 
 ## [1.2.0] - 2024-08-14
 
