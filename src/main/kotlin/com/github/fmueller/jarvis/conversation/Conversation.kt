@@ -114,7 +114,7 @@ class Conversation : Disposable {
     }
 
     override fun dispose() {
-        propertyChangeSupport.getPropertyChangeListeners("messages").forEach {
+        propertyChangeSupport.propertyChangeListeners.forEach {
             propertyChangeSupport.removePropertyChangeListener(it)
         }
     }
