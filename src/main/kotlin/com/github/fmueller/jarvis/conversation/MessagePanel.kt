@@ -106,7 +106,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
                     val newContent = newParsedContent.subList(i, newParsedContent.size)
                     parsed.subList(i, parsed.size).clear()
                     parsed.addAll(newContent)
-                    removeAllComponentsAfter(i + 1)
+                    removeAllComponentsAfter(i)
                     render(newContent)
                     break
                 }

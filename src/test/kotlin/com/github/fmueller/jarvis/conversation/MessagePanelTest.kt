@@ -28,6 +28,15 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("Hi", messagePanel.message.content)
     }
 
+    fun `test component count remains consistent when content type changes`() {
+        assertEquals(2, messagePanel.componentCount)
+
+        messagePanel.message = Message.fromAssistant("```kotlin\nprintln(\"Hi\")\n```")
+
+        assertEquals(2, messagePanel.componentCount)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
+    }
+
     fun `test code block is rendered correctly`() {
         messagePanel.message = Message.fromAssistant("```kotlin\nprintln(\"Hello, World!\")\n```")
 
