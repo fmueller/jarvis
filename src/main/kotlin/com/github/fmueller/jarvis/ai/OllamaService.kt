@@ -56,7 +56,7 @@ object OllamaService {
                         }
                         return prev;
                     }
-                    ´´´
+                    ```
 
                     This function initializes three pointers and iteratively reverses the direction of the next pointers.
 
@@ -66,25 +66,25 @@ object OllamaService {
 
                     [Code Context]:
 
-                    ´´´java
+                    ```java
                     public class Main {
                         public static void main(String[] args) {
                             String text = null;
                             System.out.println(text.length());
                         }
                     }
-                    ´´´
+                    ```
 
                     [Assistant]: The `NullPointerException` occurs because you're trying to call `length()` on a null object. You need to initialize `text` before using it:
 
-                    ´´´java
+                    ```java
                     public class Main {
                         public static void main(String[] args) {
                             String text = "Hello, World!";
                             System.out.println(text.length());
                         }
                     }
-                    ´´´
+                    ```
 
                     By assigning a value to `text`, you can safely call `length()` without triggering a `NullPointerException`.
 
@@ -94,22 +94,22 @@ object OllamaService {
 
                     [Code Context]:
 
-                    ´´´python
+                    ```python
                     def process_data(data):
                         result = []
                         for item in data:
                             if item not in result:
                                 result.append(item)
                         return result
-                    ´´´
+                    ```
 
                     [Assistant]: You can optimize the function by using a `set` to remove duplicates more efficiently:
 
-                    ´´´python
+                    ```python
                     def process_data(data):
                         # Use a set to remove duplicates and convert back to a list
                         return list(set(data))
-                    ´´´
+                    ```
 
                     This approach leverages the `set` data structure to eliminate duplicate items more efficiently than iterating through the list.
                     """.trimIndent()
