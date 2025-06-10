@@ -15,7 +15,9 @@ class ChatCommand : SlashCommand {
         }
 
         val response = OllamaService.chat(conversation, true).trim()
-        conversation.addMessage(Message.fromAssistant(response))
+        if (response.isNotBlank()) {
+            conversation.addMessage(Message.fromAssistant(response))
+        }
         return conversation
     }
 }

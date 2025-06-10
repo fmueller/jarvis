@@ -9,8 +9,13 @@ import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -140,8 +145,9 @@ object OllamaService {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun chat(conversation: Conversation, useCodeContext: Boolean): String = withContext(Dispatchers.IO) {
-        // TODO check if model is available
-        // TODO if not, download model
+        if (!ensureModelAvailable(conversation)) {
+            return@withContext ""
+        }
 
         val projectPromptPart =
             if (conversation.isFirstUserMessage())
@@ -222,6 +228,60 @@ object OllamaService {
         } catch (e: Exception) {
             false
         }
+    }
+
+    private fun isModelAvailable(): Boolean {
+        return try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:11434/api/tags"))
+                .timeout(Duration.ofSeconds(2))
+                .build()
+
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            if (response.statusCode() != 200) return false
+            val json = Json.parseToJsonElement(response.body())
+            val models = json.jsonObject["models"]?.jsonArray ?: return false
+            models.any {
+                val name = it.jsonObject["name"]?.jsonPrimitive?.content ?: ""
+                name.startsWith(modelName)
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun pullModel() {
+        try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:11434/api/pull"))
+                .timeout(Duration.ofSeconds(2))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
+                .build()
+
+            client.send(request, HttpResponse.BodyHandlers.discarding())
+        } catch (_: Exception) {
+            // ignore
+        }
+    }
+
+    private suspend fun ensureModelAvailable(conversation: Conversation): Boolean {
+        if (isModelAvailable()) return true
+
+        conversation.addMessage(Message.fromInfo("Downloading model..."))
+        pullModel()
+
+        val timeout = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis()
+        while (System.currentTimeMillis() < timeout) {
+            if (isModelAvailable()) {
+                conversation.addMessage(Message.fromInfo("Model downloaded successfully."))
+                return true
+            }
+            delay(3000)
+        }
+
+        conversation.addMessage(Message.fromInfo("Model download failed."))
+        return false
     }
 
     private fun createAiService(): Assistant {
