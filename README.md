@@ -32,6 +32,7 @@ Available commands:
 - ```/new``` - Starts a new conversation
 - ```/plain``` - Sends a chat message without code context
 - ```/model <modelName>``` - Changes the model to use ('llama3.1' or 'llama3.2')
+- ```/copy``` - Copies the conversation prompt to the clipboard
 
 ## License
 
