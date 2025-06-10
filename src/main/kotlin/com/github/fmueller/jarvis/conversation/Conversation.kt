@@ -37,14 +37,14 @@ data class Message(
             """
             I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly, please install and run Ollama locally.
             
-            Furthermore, please download LLama 3.1 and 3.2 via Ollama.
+            Furthermore, please download the ```qwen3:4b``` model via Ollama.
             
             Available commands:
             
             - ```/help``` or ```/?``` - Shows this help message
             - ```/new``` - Starts a new conversation
             - ```/plain``` - Sends a chat message without code context
-            - ```/model <modelName>``` - Changes the model to use ('llama3.1' or 'llama3.2')
+            - ```/model <modelName>``` - Changes the model to use (default is 'qwen3:4b')
             """.trimIndent()
         )
 

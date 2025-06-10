@@ -129,11 +129,8 @@ object OllamaService {
         fun chat(message: String): TokenStream
     }
 
-    var modelName: String = "llama3.2"
+    var modelName: String = "qwen3:4b"
         set(value) {
-            if (value != "llama3.1" && value != "llama3.2") {
-                throw IllegalArgumentException("Invalid model name: $value")
-            }
             field = value
             assistant = createAiService()
         }
