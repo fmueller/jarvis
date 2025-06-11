@@ -5,7 +5,7 @@ annotations = "26.0.2"
 # plugins
 kotlin = "2.1.21"
 changelog = "2.2.1"
-gradleIntelliJPlugin = "1.17.4"
+gradleIntelliJPlugin = "2.0.1"
 qodana = "2025.1.1"
 kover = "0.9.1"
 
@@ -14,7 +14,7 @@ annotations = { group = "org.jetbrains", name = "annotations", version.ref = "an
 
 [plugins]
 changelog = { id = "org.jetbrains.changelog", version.ref = "changelog" }
-gradleIntelliJPlugin = { id = "org.jetbrains.intellij", version.ref = "gradleIntelliJPlugin" }
+gradleIntelliJPlugin = { id = "org.jetbrains.intellij.platform", version.ref = "gradleIntelliJPlugin" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 qodana = { id = "org.jetbrains.qodana", version.ref = "qodana" }

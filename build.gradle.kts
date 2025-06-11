@@ -19,6 +19,10 @@ version = properties("pluginVersion").get()
 
 repositories {
     mavenCentral()
+
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 dependencies {
@@ -26,18 +30,26 @@ dependencies {
     implementation(libs.flexmark)
     implementation("dev.langchain4j:langchain4j:1.0.1")
     implementation("dev.langchain4j:langchain4j-ollama:1.0.1-beta6")
+
+    intellijPlatform {
+        create(properties("platformType"), properties("platformVersion"))
+        plugins(properties("platformPlugins").map { it.split(',').map(String::trim).filter(String::isNotEmpty) })
+        instrumentationTools()
+    }
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
-intellij {
-    pluginName = properties("pluginName")
-    version = properties("platformVersion")
-    type = properties("platformType")
-
-    plugins = properties("platformPlugins").map { it.split(',').map(String::trim).filter(String::isNotEmpty) }
+intellijPlatform {
+    pluginConfiguration {
+        name = properties("pluginName")
+        ideaVersion {
+            sinceBuild = properties("pluginSinceBuild")
+            untilBuild = properties("pluginUntilBuild")
+        }
+    }
 }
 
 changelog {
@@ -87,14 +99,6 @@ tasks {
         }
     }
 
-    // Configure UI tests plugin
-    // Read more: https://github.com/JetBrains/intellij-ui-test-robot
-    runIdeForUiTests {
-        systemProperty("robot-server.port", "8082")
-        systemProperty("ide.mac.message.dialogs.as.sheets", "false")
-        systemProperty("jb.privacy.policy.text", "<!--999.999-->")
-        systemProperty("jb.consents.confirmation.enabled", "false")
-    }
 
     signPlugin {
         certificateChain = environment("CERTIFICATE_CHAIN")
