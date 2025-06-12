@@ -1,7 +1,9 @@
 # Jarvis Changelog
 
 ## [Unreleased]
+
 ### Changed
+
 - Allow `/model` command to accept any Ollama model
 - Set `qwen3:4b` as the default model
 

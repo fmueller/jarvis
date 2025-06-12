@@ -14,8 +14,7 @@ local LLMs only. To achieve this, it is integrating with Ollama.
 ## Installation
 
 1. Install and run [Ollama](https://ollama.com)
-2. Download the default model via Ollama: ```ollama run qwen3:4b```
-3. Install Jarvis plugin in your JetBrains IDE:
+2. Install Jarvis plugin in your JetBrains IDE:
    - Using the IDE built-in plugin system: <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "jarvis"</kbd> >
      <kbd>Install</kbd>
    - Manually: Download the [latest release](https://github.com/fmueller/jarvis/releases/latest) and install it manually using
@@ -30,7 +29,7 @@ Available commands:
 - ```/help``` or ```/?``` - Shows this help message
 - ```/new``` - Starts a new conversation
 - ```/plain``` - Sends a chat message without code context
-- ```/model <modelName>``` - Changes the model to use (default is `qwen3:4b`)
+- ```/model <modelName>``` - Changes the model to use (model name `default` is `qwen3:4b`)
 
 ## License
 
