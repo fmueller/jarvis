@@ -11,7 +11,8 @@ import java.time.LocalDateTime
 enum class Role {
 
     ASSISTANT,
-    USER;
+    USER,
+    INFO;
 
     override fun toString() = name.lowercase()
 }
@@ -48,6 +49,7 @@ data class Message(
         )
 
         fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
+        fun fromInfo(content: String) = Message(Role.INFO, content)
     }
 
     fun contentWithClosedTrailingCodeBlock() =

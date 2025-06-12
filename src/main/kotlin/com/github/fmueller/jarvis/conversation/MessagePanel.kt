@@ -146,13 +146,23 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         highlightedCodeHelper.disposeAllEditors()
 
         layout = VerticalLayout(5)
-        background = if (message.role == Role.ASSISTANT) assistantBgColor() else userBgColor()
+        background = when (message.role) {
+            Role.ASSISTANT -> assistantBgColor()
+            Role.USER -> userBgColor()
+            Role.INFO -> assistantBgColor()
+        }
         border = BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, JBUI.CurrentTheme.ToolWindow.borderColor()),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         )
 
-        add(JBLabel(if (message.role == Role.ASSISTANT) "Jarvis" else "You").apply {
+        add(JBLabel(
+            when (message.role) {
+                Role.ASSISTANT -> "Jarvis"
+                Role.USER -> "You"
+                Role.INFO -> "Info"
+            }
+        ).apply {
             font = font.deriveFont(Font.BOLD)
             border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         })
