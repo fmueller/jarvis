@@ -24,4 +24,12 @@ class ModelCommandTest : TestCase() {
         assertEquals("Model changed to foobar", conversation.messages.last().content)
         assertEquals(Role.INFO, conversation.messages.last().role)
     }
+
+    fun `test default model name should set it back to qwen model`() = runBlocking {
+        val conversation = Conversation()
+        ModelCommand("foobar").run(conversation)
+        ModelCommand("default").run(conversation)
+
+        assertEquals("qwen3:4b", OllamaService.modelName)
+    }
 }
