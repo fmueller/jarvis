@@ -3,6 +3,7 @@ package com.github.fmueller.jarvis.commands
 import com.github.fmueller.jarvis.ai.OllamaService
 import com.github.fmueller.jarvis.conversation.Conversation
 import junit.framework.TestCase
+import kotlinx.coroutines.runBlocking
 
 class ModelCommandTest : TestCase() {
 
@@ -14,7 +15,7 @@ class ModelCommandTest : TestCase() {
         assertEquals("qwen3:4b", OllamaService.modelName)
     }
 
-    fun `test run sets arbitrary model name`() {
+    fun `test run sets arbitrary model name`() = runBlocking {
         val conversation = Conversation()
         ModelCommand("foobar").run(conversation)
 
