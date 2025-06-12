@@ -16,10 +16,7 @@ class CopyCommandTest : TestCase() {
         conversation.addMessage(Message(Role.USER, "Explain", CodeContext("project", Code("println()", Language.ANY))))
         conversation.addMessage(Message.fromAssistant("Sure"))
 
-        val command = CopyCommand()
-        val promptMethod = CopyCommand::class.java.getDeclaredMethod("buildPrompt", Conversation::class.java)
-        promptMethod.isAccessible = true
-        val prompt = promptMethod.invoke(command, conversation) as String
+        val prompt = CopyCommand().buildPrompt(conversation)
 
         assertTrue(prompt.contains("Explain"))
         assertTrue(prompt.contains("println()"))
@@ -30,10 +27,7 @@ class CopyCommandTest : TestCase() {
         conversation.addMessage(Message.fromAssistant("Hi"))
         conversation.addMessage(Message(Role.USER, "Hello"))
 
-        val command = CopyCommand()
-        val promptMethod = CopyCommand::class.java.getDeclaredMethod("buildPrompt", Conversation::class.java)
-        promptMethod.isAccessible = true
-        val prompt = promptMethod.invoke(command, conversation) as String
+        val prompt = CopyCommand().buildPrompt(conversation)
 
         assertFalse(prompt.contains("Code Context"))
         assertFalse(prompt.contains("No code context"))

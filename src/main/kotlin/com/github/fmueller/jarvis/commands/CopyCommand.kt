@@ -6,6 +6,7 @@ import com.github.fmueller.jarvis.conversation.Role
 import com.github.fmueller.jarvis.conversation.Code
 import com.intellij.lang.Language
 import com.intellij.openapi.ide.CopyPasteManager
+import org.jetbrains.annotations.VisibleForTesting
 import java.awt.datatransfer.StringSelection
 
 class CopyCommand : SlashCommand {
@@ -17,6 +18,7 @@ class CopyCommand : SlashCommand {
         return conversation
     }
 
+    @VisibleForTesting
     internal fun buildPrompt(conversation: Conversation): String {
         val builder = StringBuilder()
         builder.appendLine(
