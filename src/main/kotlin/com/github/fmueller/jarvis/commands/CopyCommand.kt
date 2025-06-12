@@ -14,7 +14,7 @@ class CopyCommand : SlashCommand {
     override suspend fun run(conversation: Conversation): Conversation {
         val prompt = buildPrompt(conversation)
         CopyPasteManager.getInstance().setContents(StringSelection(prompt))
-        conversation.addMessage(Message.fromAssistant("Prompt copied to clipboard."))
+        conversation.addMessage(Message.info("Conversation copied to clipboard."))
         return conversation
     }
 
@@ -22,7 +22,7 @@ class CopyCommand : SlashCommand {
     internal fun buildPrompt(conversation: Conversation): String {
         val builder = StringBuilder()
         builder.appendLine(
-            "I used the Jarvis plugin with a local model. Please take over this conversation with a larger model."
+            "I used the Jarvis plugin with a local model. Please take over this conversation and help me."
         )
         builder.appendLine()
         conversation.messages.forEach { message ->
@@ -33,7 +33,8 @@ class CopyCommand : SlashCommand {
                     builder.appendLine("[Code Context]:")
                     builder.appendLine(formatCode(code))
                 }
-            } else {
+            }
+            if (message.role == Role.ASSISTANT) {
                 builder.appendLine("[Assistant]: ${message.contentWithClosedTrailingCodeBlock()}")
             }
             builder.appendLine()
