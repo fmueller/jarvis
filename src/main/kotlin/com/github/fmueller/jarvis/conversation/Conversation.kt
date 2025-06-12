@@ -11,7 +11,8 @@ import java.time.LocalDateTime
 enum class Role {
 
     ASSISTANT,
-    USER;
+    USER,
+    INFO;
 
     override fun toString() = name.lowercase()
 }
@@ -36,19 +37,18 @@ data class Message(
             """
             I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly, please install and run Ollama locally.
             
-            Furthermore, please download LLama 3.1 and 3.2 via Ollama.
-            
             Available commands:
 
             - ```/help``` or ```/?``` - Shows this help message
             - ```/new``` - Starts a new conversation
             - ```/plain``` - Sends a chat message without code context
-            - ```/model <modelName>``` - Changes the model to use ('llama3.1' or 'llama3.2')
             - ```/copy``` - Copies the conversation prompt to the clipboard
+            - ```/model <modelName>``` - Changes the model to use (`default` is `qwen3:4b`)
             """.trimIndent()
         )
 
         fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
+        fun info(content: String) = Message(Role.INFO, content)
     }
 
     fun contentWithClosedTrailingCodeBlock() =

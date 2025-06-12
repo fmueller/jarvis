@@ -1,6 +1,7 @@
 package com.github.fmueller.jarvis.conversation
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.ui.components.JBLabel
 
 class MessagePanelTest : BasePlatformTestCase() {
 
@@ -96,5 +97,11 @@ class MessagePanelTest : BasePlatformTestCase() {
         val parsedCode = messagePanel.parsed[1] as MessagePanel.Code
         assertEquals("kotlin", parsedCode.languageId)
         assertEquals("println(\"Hello, World!\")", parsedCode.content)
+    }
+
+    fun `test info message label`() {
+        val panel = MessagePanel(Message.info("Downloading"), project)
+        val label = panel.getComponent(0) as JBLabel
+        assertEquals("Info", label.text)
     }
 }

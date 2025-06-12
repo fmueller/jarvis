@@ -2,21 +2,22 @@ package com.github.fmueller.jarvis.ai
 
 import com.github.fmueller.jarvis.conversation.CodeContext
 import com.github.fmueller.jarvis.conversation.Conversation
+import com.github.fmueller.jarvis.conversation.Message
 import com.intellij.lang.Language
 import dev.langchain4j.memory.chat.TokenWindowChatMemory
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import kotlin.coroutines.resume
 
 object OllamaService {
 
@@ -123,11 +124,8 @@ object OllamaService {
         fun chat(message: String): TokenStream
     }
 
-    var modelName: String = "llama3.2"
+    var modelName: String = "qwen3:4b"
         set(value) {
-            if (value != "llama3.1" && value != "llama3.2") {
-                throw IllegalArgumentException("Invalid model name: $value")
-            }
             field = value
             assistant = createAiService()
         }
@@ -140,8 +138,9 @@ object OllamaService {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun chat(conversation: Conversation, useCodeContext: Boolean): String = withContext(Dispatchers.IO) {
-        // TODO check if model is available
-        // TODO if not, download model
+        if (!ensureModelAvailable(conversation)) {
+            return@withContext ""
+        }
 
         val projectPromptPart =
             if (conversation.isFirstUserMessage())
@@ -222,6 +221,60 @@ object OllamaService {
         } catch (e: Exception) {
             false
         }
+    }
+
+    private fun isModelAvailable(): Boolean {
+        return try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:11434/api/tags"))
+                .timeout(Duration.ofSeconds(2))
+                .build()
+
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            if (response.statusCode() != 200) return false
+            val json = Json.parseToJsonElement(response.body())
+            val models = json.jsonObject["models"]?.jsonArray ?: return false
+            models.any {
+                val name = it.jsonObject["name"]?.jsonPrimitive?.content ?: ""
+                name.startsWith(modelName)
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun pullModel() {
+        try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:11434/api/pull"))
+                .timeout(Duration.ofSeconds(2))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
+                .build()
+
+            client.send(request, HttpResponse.BodyHandlers.discarding())
+        } catch (_: Exception) {
+            // ignore
+        }
+    }
+
+    private suspend fun ensureModelAvailable(conversation: Conversation): Boolean {
+        if (isModelAvailable()) return true
+
+        conversation.addMessage(Message.info("Downloading model..."))
+        pullModel()
+
+        val timeout = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis()
+        while (System.currentTimeMillis() < timeout) {
+            if (isModelAvailable()) {
+                conversation.addMessage(Message.info("Model downloaded successfully."))
+                return true
+            }
+            delay(3000)
+        }
+
+        conversation.addMessage(Message.info("Model download failed."))
+        return false
     }
 
     private fun createAiService(): Assistant {
