@@ -42,7 +42,7 @@ data class Message(
             - ```/help``` or ```/?``` - Shows this help message
             - ```/new``` - Starts a new conversation
             - ```/plain``` - Sends a chat message without code context
-            - ```/copy``` - Copies the conversation prompt to the clipboard
+            - ```/copy``` - Copies the conversation to the clipboard
             - ```/model <modelName>``` - Changes the model to use (`default` is `qwen3:4b`)
             """.trimIndent()
         )

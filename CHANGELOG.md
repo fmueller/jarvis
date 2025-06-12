@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- New `/copy` command copies the whole conversation to the clipboard
+- Automatic Ollama model download
+
 ### Changed
 
 - Allow `/model` command to accept any Ollama model
