@@ -1,39 +1,33 @@
 package com.github.fmueller.jarvis.conversation
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
 
 class MessagePanelTest : BasePlatformTestCase() {
 
     private lateinit var messagePanel: MessagePanel
 
-    @Before
-    fun setUpPanel() {
+    override fun setUp() {
+        super.setUp()
         messagePanel = MessagePanel(Message.fromAssistant("Hello, I am Jarvis."), project)
     }
 
-    @After
-    fun disposePanel() {
+    override fun tearDown() {
         messagePanel.dispose()
+        super.tearDown()
     }
 
-    @Test
     fun `test updateUI re-renders the initial message`() {
         messagePanel.updateUI()
 
         assertEquals("Hello, I am Jarvis.", messagePanel.message.content)
     }
 
-    @Test
     fun `test updating the message works`() {
         messagePanel.message = Message.fromAssistant("Hi")
 
         assertEquals("Hi", messagePanel.message.content)
     }
 
-    @Test
     fun `test code block is rendered correctly`() {
         messagePanel.message = Message.fromAssistant("```kotlin\nprintln(\"Hello, World!\")\n```")
 
@@ -45,7 +39,6 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("println(\"Hello, World!\")", parsedCode.content)
     }
 
-    @Test
     fun `test multiple code blocks are rendered correctly`() {
         messagePanel.message =
             Message.fromAssistant("```kotlin\nprintln(\"Hello, World!\")\n```\n```java\nSystem.out.println(\"Hello, World!\")\n```")
@@ -63,7 +56,6 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("System.out.println(\"Hello, World!\")", parsedCode2.content)
     }
 
-    @Test
     fun `test unclosed code block is rendered correctly as code block`() {
         messagePanel.message = Message.fromAssistant("```kotlin\nprintln(\"Hello, World!\")")
 
@@ -75,7 +67,6 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("println(\"Hello, World!\")", parsedCode.content)
     }
 
-    @Test
     fun `test empty code block is rendered correctly as code block`() {
         messagePanel.message = Message.fromAssistant("```kotlin\n\n```")
 
@@ -87,7 +78,6 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("", parsedCode.content)
     }
 
-    @Test
     fun `test multiple message updates`() {
         messagePanel.message = Message.fromAssistant("Hello World:\n\n")
         messagePanel.message = Message.fromAssistant("Hello World:\n\n```")
