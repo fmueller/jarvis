@@ -2,6 +2,7 @@ package com.github.fmueller.jarvis.ai
 
 import com.github.fmueller.jarvis.conversation.CodeContext
 import com.github.fmueller.jarvis.conversation.Conversation
+import com.github.fmueller.jarvis.conversation.Message
 import com.intellij.lang.Language
 import dev.langchain4j.memory.chat.TokenWindowChatMemory
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
