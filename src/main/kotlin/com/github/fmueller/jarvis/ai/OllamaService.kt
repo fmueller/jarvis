@@ -22,7 +22,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import kotlin.coroutines.resume
 
 object OllamaService {
 
@@ -266,19 +265,19 @@ object OllamaService {
     private suspend fun ensureModelAvailable(conversation: Conversation): Boolean {
         if (isModelAvailable()) return true
 
-        conversation.addMessage(Message.fromInfo("Downloading model..."))
+        conversation.addMessage(Message.info("Downloading model..."))
         pullModel()
 
         val timeout = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis()
         while (System.currentTimeMillis() < timeout) {
             if (isModelAvailable()) {
-                conversation.addMessage(Message.fromInfo("Model downloaded successfully."))
+                conversation.addMessage(Message.info("Model downloaded successfully."))
                 return true
             }
             delay(3000)
         }
 
-        conversation.addMessage(Message.fromInfo("Model download failed."))
+        conversation.addMessage(Message.info("Model download failed."))
         return false
     }
 

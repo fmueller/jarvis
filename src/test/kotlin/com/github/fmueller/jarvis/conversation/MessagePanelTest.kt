@@ -100,7 +100,7 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test info message label`() {
-        val panel = MessagePanel(Message.fromInfo("Downloading"), project)
+        val panel = MessagePanel(Message.info("Downloading"), project)
         val label = panel.getComponent(0) as JBLabel
         assertEquals("Info", label.text)
     }

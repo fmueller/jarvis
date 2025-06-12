@@ -49,7 +49,7 @@ data class Message(
         )
 
         fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
-        fun fromInfo(content: String) = Message(Role.INFO, content)
+        fun info(content: String) = Message(Role.INFO, content)
     }
 
     fun contentWithClosedTrailingCodeBlock() =

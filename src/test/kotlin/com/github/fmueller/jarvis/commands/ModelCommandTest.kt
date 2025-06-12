@@ -2,6 +2,7 @@ package com.github.fmueller.jarvis.commands
 
 import com.github.fmueller.jarvis.ai.OllamaService
 import com.github.fmueller.jarvis.conversation.Conversation
+import com.github.fmueller.jarvis.conversation.Role
 import junit.framework.TestCase
 import kotlinx.coroutines.runBlocking
 
@@ -21,5 +22,6 @@ class ModelCommandTest : TestCase() {
 
         assertEquals("foobar", OllamaService.modelName)
         assertEquals("Model changed to foobar", conversation.messages.last().content)
+        assertEquals(Role.INFO, conversation.messages.last().role)
     }
 }

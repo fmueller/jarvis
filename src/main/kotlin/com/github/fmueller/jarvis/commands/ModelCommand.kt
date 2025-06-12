@@ -8,7 +8,7 @@ class ModelCommand(private val modelName: String) : SlashCommand {
 
     override suspend fun run(conversation: Conversation): Conversation {
         OllamaService.modelName = modelName
-        conversation.addMessage(Message.fromAssistant("Model changed to $modelName"))
+        conversation.addMessage(Message.info("Model changed to $modelName"))
         return conversation
     }
 }
