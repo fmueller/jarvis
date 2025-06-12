@@ -1,23 +1,28 @@
 package com.github.fmueller.jarvis.conversation
 
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 
-class ConversationTest : BasePlatformTestCase() {
+class ConversationTest {
 
     private lateinit var conversation: Conversation
 
-    override fun setUp() {
-        super.setUp()
+    @Before
+    fun setUpConversation() {
         conversation = Conversation()
     }
 
-    override fun tearDown() {
+    @After
+    fun tearDownConversation() {
         conversation.dispose()
-        super.tearDown()
     }
 
+    @Test
     fun `test dispose removes property change listeners`() {
         var called = false
         val listener1 = PropertyChangeListener { called = true }

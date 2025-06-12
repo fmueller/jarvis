@@ -1,10 +1,13 @@
 package com.github.fmueller.jarvis.ai
 
-import junit.framework.TestCase
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
+import org.junit.Test
 
-class OllamaServicePromptTest : TestCase() {
+class OllamaServicePromptTest {
 
-    fun `test system prompt uses triple backticks`() {
+    @Test
+    fun `system prompt uses triple backticks`() {
         val field = OllamaService::class.java.getDeclaredField("systemPrompt")
         field.isAccessible = true
         val prompt = field.get(OllamaService) as String

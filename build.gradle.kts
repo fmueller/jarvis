@@ -1,5 +1,6 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 fun properties(key: String) = providers.gradleProperty(key)
 fun environment(key: String) = providers.environmentVariable(key)
@@ -31,10 +32,13 @@ dependencies {
     implementation("dev.langchain4j:langchain4j:1.0.1")
     implementation("dev.langchain4j:langchain4j-ollama:1.0.1-beta6")
 
+    testImplementation("junit:junit:4.13.2")
+    testImplementation(kotlin("test"))
+
     intellijPlatform {
         create(properties("platformType"), properties("platformVersion"))
         plugins(properties("platformPlugins").map { it.split(',').map(String::trim).filter(String::isNotEmpty) })
-        instrumentationTools()
+        testFramework(TestFrameworkType.Platform)
     }
 }
 
@@ -65,6 +69,10 @@ kover {
 }
 
 tasks {
+    test {
+        useJUnitPlatform()
+    }
+
     wrapper {
         gradleVersion = properties("gradleVersion").get()
     }
