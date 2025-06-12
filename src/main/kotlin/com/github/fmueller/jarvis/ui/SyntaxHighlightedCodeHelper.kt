@@ -4,7 +4,6 @@ import com.intellij.lang.Language
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vcs.changes.ignore.lang.IgnoreLanguage
 import com.intellij.psi.PsiFileFactory
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -20,7 +19,7 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
     }
 
     fun getHighlightedEditor(languageId: String, code: String): Editor? {
-        val language = Language.findLanguageByID(languageId) ?: IgnoreLanguage.INSTANCE
+        val language = Language.findLanguageByID(languageId) ?: Language.ANY
         val fileType = language.associatedFileType ?: return null
 
         val file = PsiFileFactory.getInstance(project)

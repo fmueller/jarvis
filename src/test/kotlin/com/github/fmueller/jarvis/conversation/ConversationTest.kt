@@ -1,10 +1,10 @@
 package com.github.fmueller.jarvis.conversation
 
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import junit.framework.TestCase
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 
-class ConversationTest : BasePlatformTestCase() {
+class ConversationTest : TestCase() {
 
     private lateinit var conversation: Conversation
 
