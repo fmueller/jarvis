@@ -38,10 +38,11 @@ data class Message(
             I'm Jarvis, your personal coding assistant. You can ask me anything. To make me work properly, please install and run Ollama locally.
             
             Available commands:
-            
+
             - ```/help``` or ```/?``` - Shows this help message
             - ```/new``` - Starts a new conversation
             - ```/plain``` - Sends a chat message without code context
+            - ```/copy``` - Copies the conversation to the clipboard
             - ```/model <modelName>``` - Changes the model to use (`default` is `qwen3:4b`)
             """.trimIndent()
         )

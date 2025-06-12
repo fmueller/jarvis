@@ -21,6 +21,10 @@ object SlashCommandParser {
             return ModelCommand(modelName)
         }
 
+        if (trimmedMessage == "/copy") {
+            return CopyCommand()
+        }
+
         return ChatCommand()
     }
 }

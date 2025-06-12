@@ -23,4 +23,9 @@ class SlashCommandParserTest : TestCase() {
         val command = SlashCommandParser.parse("/model llama3.1")
         assertTrue(command is ModelCommand)
     }
+
+    fun `test parse copy returns CopyCommand`() {
+        val command = SlashCommandParser.parse("/copy")
+        assertTrue(command is CopyCommand)
+    }
 }
