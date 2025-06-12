@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Allow `/model` command to accept any Ollama model
+- Set `qwen3:4b` as the default model
+
 ## [1.6.0] - 2024-11-27
 
 ### Added

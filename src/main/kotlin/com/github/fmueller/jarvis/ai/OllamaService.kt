@@ -8,11 +8,7 @@ import dev.langchain4j.memory.chat.TokenWindowChatMemory
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -22,7 +18,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import kotlin.coroutines.resume
 
 object OllamaService {
 
@@ -129,11 +124,8 @@ object OllamaService {
         fun chat(message: String): TokenStream
     }
 
-    var modelName: String = "llama3.2"
+    var modelName: String = "qwen3:4b"
         set(value) {
-            if (value != "llama3.1" && value != "llama3.2") {
-                throw IllegalArgumentException("Invalid model name: $value")
-            }
             field = value
             assistant = createAiService()
         }
@@ -269,19 +261,19 @@ object OllamaService {
     private suspend fun ensureModelAvailable(conversation: Conversation): Boolean {
         if (isModelAvailable()) return true
 
-        conversation.addMessage(Message.fromInfo("Downloading model..."))
+        conversation.addMessage(Message.info("Downloading model..."))
         pullModel()
 
         val timeout = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis()
         while (System.currentTimeMillis() < timeout) {
             if (isModelAvailable()) {
-                conversation.addMessage(Message.fromInfo("Model downloaded successfully."))
+                conversation.addMessage(Message.info("Model downloaded successfully."))
                 return true
             }
             delay(3000)
         }
 
-        conversation.addMessage(Message.fromInfo("Model download failed."))
+        conversation.addMessage(Message.info("Model download failed."))
         return false
     }
 
