@@ -32,4 +32,21 @@ class CopyCommandTest : TestCase() {
         assertFalse(prompt.contains("Code Context"))
         assertFalse(prompt.contains("No code context"))
     }
+
+    fun `test buildPrompt omits code for plain message`() {
+        val conversation = Conversation()
+        conversation.addMessage(Message.fromAssistant("Hi"))
+        conversation.addMessage(
+            Message(
+                Role.USER,
+                "/plain Explain",
+                CodeContext("project", Code("println()", Language.ANY))
+            )
+        )
+
+        val prompt = CopyCommand().buildPrompt(conversation)
+
+        assertFalse(prompt.contains("Code Context"))
+        assertFalse(prompt.contains("println()"))
+    }
 }
