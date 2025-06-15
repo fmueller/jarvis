@@ -17,8 +17,10 @@ import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import org.jdesktop.swingx.VerticalLayout
+import java.awt.BorderLayout
 import java.awt.Font
 import java.util.regex.Pattern
+import com.intellij.ui.HideableDecorator
 import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
@@ -34,6 +36,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
     sealed interface ParsedContent
     data class Content(val markdown: String) : ParsedContent
     data class Code(val languageId: String, val content: String) : ParsedContent
+    data class Reasoning(val markdown: String) : ParsedContent
 
     private val highlightedCodeHelper = SyntaxHighlightedCodeHelper(project)
 
@@ -98,6 +101,11 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
                             remove(componentCount - 1)
                             addHighlightedCode((new as Code).languageId, new.content)
                         }
+
+                        is Reasoning -> {
+                            remove(componentCount - 1)
+                            addReasoning((new as Reasoning).markdown)
+                        }
                     }
                     break
                 }
@@ -122,6 +130,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         return when (old) {
             is Content -> (new as Content).markdown.startsWith(old.markdown)
             is Code -> (new as Code).content.startsWith(old.content) && new.languageId == old.languageId
+            is Reasoning -> (new as Reasoning).markdown.startsWith(old.markdown)
         }
     }
 
@@ -133,6 +142,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         return when (old) {
             is Content -> (new as Content).markdown != old.markdown
             is Code -> (new as Code).content != old.content || new.languageId != old.languageId
+            is Reasoning -> (new as Reasoning).markdown != old.markdown
         }
     }
 
@@ -170,12 +180,27 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
 
     private fun parse(markdown: String): List<ParsedContent> {
         val parsed = mutableListOf<ParsedContent>()
-        val matcher = codeBlockPattern.matcher(markdown)
+
+        var remaining = markdown
+        if (remaining.startsWith("<think>")) {
+            val end = remaining.indexOf("</think>")
+            if (end != -1) {
+                val reasoning = remaining.substring("<think>".length, end)
+                parsed.add(Reasoning(reasoning))
+                remaining = remaining.substring(end + "</think>".length)
+            } else {
+                val reasoning = remaining.removePrefix("<think>")
+                parsed.add(Reasoning(reasoning))
+                remaining = ""
+            }
+        }
+
+        val matcher = codeBlockPattern.matcher(remaining)
         var lastEnd = 0
         while (matcher.find()) {
             // Add preceding non-code content
             if (matcher.start() > lastEnd) {
-                val nonCodeMarkdown = markdown.substring(lastEnd, matcher.start())
+                val nonCodeMarkdown = remaining.substring(lastEnd, matcher.start())
                 parsed.add(Content(nonCodeMarkdown))
             }
 
@@ -188,8 +213,8 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         }
 
         // Add any remaining non-code content
-        if (lastEnd < markdown.length) {
-            val remainingNonCodeMarkdown = markdown.substring(lastEnd)
+        if (lastEnd < remaining.length) {
+            val remainingNonCodeMarkdown = remaining.substring(lastEnd)
             parsed.add(Content(remainingNonCodeMarkdown))
         }
 
@@ -201,6 +226,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             when (it) {
                 is Content -> addNonCodeContent(it.markdown)
                 is Code -> addHighlightedCode(it.languageId, it.content)
+                is Reasoning -> addReasoning(it.markdown)
             }
         }
     }
@@ -240,6 +266,24 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         }
         add(editorPane)
+    }
+
+    private fun addReasoning(markdown: String) {
+        val outer = JPanel().apply { layout = BorderLayout() }
+        val content = JPanel().apply { layout = BorderLayout() }
+        val decorator = HideableDecorator(outer, "Reasoning", false)
+        decorator.setContentComponent(content)
+        decorator.setOn(false)
+
+        val editorPane = JEditorPane().apply {
+            editorKit = HTMLEditorKitBuilder.simple()
+            text = markdownToHtml(markdown)
+            isEditable = false
+            background = outer.background
+            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        }
+        content.add(editorPane, BorderLayout.CENTER)
+        add(outer)
     }
 
     private fun addHighlightedCode(languageId: String, code: String) {
