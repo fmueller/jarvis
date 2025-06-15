@@ -6,6 +6,7 @@
 
 - New `/copy` command copies the whole conversation to the clipboard
 - Automatic Ollama model download
+- Display reasoning from models using `<think>` blocks
 
 ### Changed
 
