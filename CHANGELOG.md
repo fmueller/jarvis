@@ -11,6 +11,7 @@
 
 - Allow `/model` command to accept any Ollama model
 - Set `qwen3:4b` as the default model
+- `/copy` ignores code context for `/plain` messages
 
 ## [1.6.0] - 2024-11-27
 
