@@ -9,7 +9,7 @@ class MessagePanelTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        messagePanel = MessagePanel(Message.fromAssistant("Hello, I am Jarvis."), project)
+        messagePanel = MessagePanel(Message.fromAssistant("Hello, I am Jarvis."), project, false)
     }
 
     override fun tearDown() {
@@ -100,7 +100,7 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test info message label`() {
-        val panel = MessagePanel(Message.info("Downloading"), project)
+        val panel = MessagePanel(Message.info("Downloading"), project, false)
         val label = panel.getComponent(0) as JBLabel
         assertEquals("Info", label.text)
     }
@@ -109,6 +109,6 @@ class MessagePanelTest : BasePlatformTestCase() {
         messagePanel.message = Message.fromAssistant("<think>Reason</think>Hello")
 
         assertEquals(1, messagePanel.parsed.size)
-        assertTrue(messagePanel.reasoningEditorPane?.text?.contains("Reason") ?: false)
+        assertTrue(messagePanel.reasoningMessagePanel?.message?.content?.contains("Reason") ?: false)
     }
 }
