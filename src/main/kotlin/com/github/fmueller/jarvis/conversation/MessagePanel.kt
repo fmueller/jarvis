@@ -6,7 +6,6 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
-import com.intellij.ui.HideableDecorator
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.HTMLEditorKitBuilder
@@ -22,8 +21,10 @@ import java.awt.BorderLayout
 import java.awt.Font
 import java.util.regex.Pattern
 import javax.swing.BorderFactory
+import javax.swing.JButton
 import javax.swing.JEditorPane
 import javax.swing.JPanel
+import javax.swing.SwingConstants
 
 class MessagePanel(
     initialMessage: Message,
@@ -48,10 +49,22 @@ class MessagePanel(
     val parsed = mutableListOf<ParsedContent>()
 
     private var reasoningPanel: JPanel? = null
-    private var reasoningDecorator: HideableDecorator? = null
+    private var reasoningHeaderButton: JButton? = null
+    private var reasoningContentPanel: JPanel? = null
 
     // visibility for testing
     var reasoningMessagePanel: MessagePanel? = null
+
+    private var isReasoningExpanded: Boolean = false
+        set(value) {
+            field = value
+            reasoningContentPanel?.isVisible = value
+            reasoningHeaderButton?.icon = if (value) {
+                com.intellij.icons.AllIcons.General.ArrowDown
+            } else {
+                com.intellij.icons.AllIcons.General.ArrowRight
+            }
+        }
 
     private var _message: Message = initialMessage
     var message: Message
@@ -93,7 +106,9 @@ class MessagePanel(
             } else {
                 reasoningMessagePanel?.message = Message.fromAssistant(reasoning.markdown)
             }
-            reasoningDecorator?.setOn(reasoning.isInProgress)
+            reasoningContentPanel?.isVisible = reasoning.isInProgress
+            reasoningHeaderButton?.text = "Reasoning${if (reasoning.isInProgress) "..." else ""}"
+            isReasoningExpanded = reasoning.isInProgress
         } else {
             reasoningPanel?.isVisible = false
         }
@@ -209,16 +224,42 @@ class MessagePanel(
             val outerPanel = JPanel().apply { layout = BorderLayout() }
             val contentPanel = JPanel().apply { layout = BorderLayout() }
             reasoningPanel = outerPanel
-            reasoningDecorator = HideableDecorator(outerPanel, "Reasoning", false)
-            reasoningDecorator?.setContentComponent(contentPanel)
+            reasoningContentPanel = contentPanel
+
+            val headerButton = JButton("Reasoning").apply {
+                isBorderPainted = false
+                isContentAreaFilled = false
+                isFocusPainted = false
+                isOpaque = false
+
+                horizontalAlignment = SwingConstants.LEFT
+                border = BorderFactory.createEmptyBorder(4, 8, 4, 8)
+                font = font.deriveFont(Font.BOLD, font.size.toFloat())
+
+                icon = if (contentPanel.isVisible) {
+                    com.intellij.icons.AllIcons.General.ArrowDown
+                } else {
+                    com.intellij.icons.AllIcons.General.ArrowRight
+                }
+
+                addActionListener {
+                    isReasoningExpanded = !isReasoningExpanded
+                }
+            }
+            reasoningHeaderButton = headerButton
+
+            outerPanel.add(headerButton, BorderLayout.NORTH)
+            outerPanel.add(contentPanel, BorderLayout.CENTER)
 
             reasoningMessagePanel = MessagePanel(Message.fromAssistant(""), project, true).apply {
                 background = outerPanel.background
                 border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
             }
             contentPanel.add(reasoningMessagePanel, BorderLayout.CENTER)
-            add(outerPanel)
+            contentPanel.isVisible = false
+            isReasoningExpanded = false
 
+            add(outerPanel)
             outerPanel.isVisible = false
         }
     }
