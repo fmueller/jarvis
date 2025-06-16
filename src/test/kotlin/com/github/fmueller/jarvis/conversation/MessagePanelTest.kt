@@ -108,10 +108,7 @@ class MessagePanelTest : BasePlatformTestCase() {
     fun `test reasoning block is parsed`() {
         messagePanel.message = Message.fromAssistant("<think>Reason</think>Hello")
 
-        assertEquals(2, messagePanel.parsed.size)
-        assertTrue(messagePanel.parsed[0] is MessagePanel.Reasoning)
-        val reasoning = messagePanel.parsed[0] as MessagePanel.Reasoning
-        assertEquals("Reason", reasoning.markdown)
-        assertTrue(messagePanel.parsed[1] is MessagePanel.Content)
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.reasoningEditorPane?.text?.contains("Reason") ?: false)
     }
 }

@@ -43,6 +43,12 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
     // visibility for testing
     val parsed = mutableListOf<ParsedContent>()
 
+    private var reasoningPanel: JPanel? = null
+    private var reasoningDecorator: HideableDecorator? = null
+
+    // visibility for testing
+    var reasoningEditorPane: JEditorPane? = null
+
     private var _message: Message = initialMessage
     var message: Message
         get() = _message
@@ -73,7 +79,17 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             return
         }
 
-        val newParsedContent = parse(message.contentWithClosedTrailingCodeBlock())
+        val (reasoning, contentList) = parse(message.contentWithClosedTrailingCodeBlock())
+
+        if (reasoning != null) {
+            reasoningPanel?.isVisible = true
+            reasoningEditorPane?.text = markdownToHtml(reasoning.markdown)
+            reasoningDecorator?.setOn(reasoning.isInProgress)
+        } else {
+            reasoningPanel?.isVisible = false
+        }
+
+        val newParsedContent = contentList
         synchronized(treeLock) {
             for (i in newParsedContent.indices) {
                 if (i >= parsed.size) {
@@ -103,8 +119,9 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
                         }
 
                         is Reasoning -> {
+                            // This should not happen anymore as reasoning is handled separately
                             remove(componentCount - 1)
-                            addReasoning((new as Reasoning).markdown, new.isInProgress)
+                            addNonCodeContent((new as Reasoning).markdown)
                         }
                     }
                     break
@@ -176,21 +193,39 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             font = font.deriveFont(Font.BOLD)
             border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         })
+
+        val outerPanel = JPanel().apply { layout = BorderLayout() }
+        val contentPanel = JPanel().apply { layout = BorderLayout() }
+        reasoningPanel = outerPanel
+        reasoningDecorator = HideableDecorator(outerPanel, "Reasoning", false)
+        reasoningDecorator?.setContentComponent(contentPanel)
+
+        reasoningEditorPane = JEditorPane().apply {
+            editorKit = HTMLEditorKitBuilder.simple()
+            isEditable = false
+            background = outerPanel.background
+            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        }
+        contentPanel.add(reasoningEditorPane, BorderLayout.CENTER)
+        add(outerPanel)
+
+        outerPanel.isVisible = false
     }
 
-    private fun parse(markdown: String): List<ParsedContent> {
+    private fun parse(markdown: String): Pair<Reasoning?, List<ParsedContent>> {
         val parsed = mutableListOf<ParsedContent>()
+        var reasoning: Reasoning? = null
 
         var remaining = markdown
         if (remaining.startsWith("<think>")) {
             val end = remaining.indexOf("</think>")
             if (end != -1) {
-                val reasoning = remaining.substring("<think>".length, end)
-                parsed.add(Reasoning(reasoning, false))
+                val reasoningText = remaining.substring("<think>".length, end)
+                reasoning = Reasoning(reasoningText, false)
                 remaining = remaining.substring(end + "</think>".length)
             } else {
-                val reasoning = remaining.removePrefix("<think>")
-                parsed.add(Reasoning(reasoning, true))
+                val reasoningText = remaining.removePrefix("<think>")
+                reasoning = Reasoning(reasoningText, true)
                 remaining = ""
             }
         }
@@ -218,7 +253,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             parsed.add(Content(remainingNonCodeMarkdown))
         }
 
-        return parsed
+        return Pair(reasoning, parsed)
     }
 
     private fun render(parsed: List<ParsedContent>) {
@@ -226,7 +261,11 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             when (it) {
                 is Content -> addNonCodeContent(it.markdown)
                 is Code -> addHighlightedCode(it.languageId, it.content)
-                is Reasoning -> addReasoning(it.markdown, it.isInProgress)
+                is Reasoning -> {
+                    // Reasoning blocks are now handled separately in updatePanel
+                    // This case should not occur anymore, but handle it gracefully
+                    addNonCodeContent(it.markdown)
+                }
             }
         }
     }
