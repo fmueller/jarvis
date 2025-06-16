@@ -36,7 +36,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
     sealed interface ParsedContent
     data class Content(val markdown: String) : ParsedContent
     data class Code(val languageId: String, val content: String) : ParsedContent
-    data class Reasoning(val markdown: String) : ParsedContent
+    data class Reasoning(val markdown: String, val isInProgress: Boolean = false) : ParsedContent
 
     private val highlightedCodeHelper = SyntaxHighlightedCodeHelper(project)
 
@@ -104,7 +104,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
 
                         is Reasoning -> {
                             remove(componentCount - 1)
-                            addReasoning((new as Reasoning).markdown)
+                            addReasoning((new as Reasoning).markdown, new.isInProgress)
                         }
                     }
                     break
@@ -186,11 +186,11 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             val end = remaining.indexOf("</think>")
             if (end != -1) {
                 val reasoning = remaining.substring("<think>".length, end)
-                parsed.add(Reasoning(reasoning))
+                parsed.add(Reasoning(reasoning, false))
                 remaining = remaining.substring(end + "</think>".length)
             } else {
                 val reasoning = remaining.removePrefix("<think>")
-                parsed.add(Reasoning(reasoning))
+                parsed.add(Reasoning(reasoning, true))
                 remaining = ""
             }
         }
@@ -226,7 +226,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             when (it) {
                 is Content -> addNonCodeContent(it.markdown)
                 is Code -> addHighlightedCode(it.languageId, it.content)
-                is Reasoning -> addReasoning(it.markdown)
+                is Reasoning -> addReasoning(it.markdown, it.isInProgress)
             }
         }
     }
@@ -268,12 +268,12 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
         add(editorPane)
     }
 
-    private fun addReasoning(markdown: String) {
+    private fun addReasoning(markdown: String, isInProgress: Boolean = false) {
         val outer = JPanel().apply { layout = BorderLayout() }
         val content = JPanel().apply { layout = BorderLayout() }
         val decorator = HideableDecorator(outer, "Reasoning", false)
         decorator.setContentComponent(content)
-        decorator.setOn(false)
+        decorator.setOn(isInProgress) // Open the decorator if reasoning is still in progress
 
         val editorPane = JEditorPane().apply {
             editorKit = HTMLEditorKitBuilder.simple()
