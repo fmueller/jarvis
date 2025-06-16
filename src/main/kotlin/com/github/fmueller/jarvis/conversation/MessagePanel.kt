@@ -214,7 +214,7 @@ class MessagePanel(
 
             reasoningMessagePanel = MessagePanel(Message.fromAssistant(""), project, true).apply {
                 background = outerPanel.background
-                border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+                border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
             }
             contentPanel.add(reasoningMessagePanel, BorderLayout.CENTER)
             add(outerPanel)
