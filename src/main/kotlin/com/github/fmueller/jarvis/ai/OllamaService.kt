@@ -243,8 +243,8 @@ object OllamaService {
         }
     }
 
-    private fun pullModel() {
-        try {
+    private fun pullModel(): String? {
+        return try {
             val request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:11434/api/pull"))
                 .timeout(Duration.ofSeconds(2))
@@ -252,9 +252,19 @@ object OllamaService {
                 .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
                 .build()
 
-            client.send(request, HttpResponse.BodyHandlers.discarding())
-        } catch (_: Exception) {
-            // ignore
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val body = response.body()
+            val firstLine = body.lineSequence().firstOrNull() ?: ""
+            val error = runCatching { Json.parseToJsonElement(firstLine).jsonObject["error"]?.jsonPrimitive?.content }
+                .getOrNull()
+
+            if (response.statusCode() != 200 || error != null) {
+                error ?: "status ${response.statusCode()}"
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.message
         }
     }
 
@@ -262,7 +272,11 @@ object OllamaService {
         if (isModelAvailable()) return true
 
         conversation.addMessage(Message.info("Downloading model..."))
-        pullModel()
+        val pullError = pullModel()
+        if (pullError != null) {
+            conversation.addMessage(Message.info("Model download failed: $pullError"))
+            return false
+        }
 
         val timeout = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis()
         while (System.currentTimeMillis() < timeout) {
