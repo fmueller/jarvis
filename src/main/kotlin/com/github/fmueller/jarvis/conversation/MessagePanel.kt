@@ -6,6 +6,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
+import com.intellij.ui.HideableDecorator
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.HTMLEditorKitBuilder
@@ -20,7 +21,6 @@ import org.jdesktop.swingx.VerticalLayout
 import java.awt.BorderLayout
 import java.awt.Font
 import java.util.regex.Pattern
-import com.intellij.ui.HideableDecorator
 import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
@@ -305,24 +305,6 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         }
         add(editorPane)
-    }
-
-    private fun addReasoning(markdown: String, isInProgress: Boolean = false) {
-        val outer = JPanel().apply { layout = BorderLayout() }
-        val content = JPanel().apply { layout = BorderLayout() }
-        val decorator = HideableDecorator(outer, "Reasoning", false)
-        decorator.setContentComponent(content)
-        decorator.setOn(isInProgress) // Open the decorator if reasoning is still in progress
-
-        val editorPane = JEditorPane().apply {
-            editorKit = HTMLEditorKitBuilder.simple()
-            text = markdownToHtml(markdown)
-            isEditable = false
-            background = outer.background
-            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
-        }
-        content.add(editorPane, BorderLayout.CENTER)
-        add(outer)
     }
 
     private fun addHighlightedCode(languageId: String, code: String) {
