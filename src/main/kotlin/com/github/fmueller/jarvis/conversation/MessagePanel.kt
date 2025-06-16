@@ -25,7 +25,11 @@ import javax.swing.BorderFactory
 import javax.swing.JEditorPane
 import javax.swing.JPanel
 
-class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Disposable {
+class MessagePanel(
+    initialMessage: Message,
+    private val project: Project,
+    private val isReasoningPanel: Boolean = false
+) : JPanel(), Disposable {
 
     private companion object {
         private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n```", Pattern.DOTALL)
@@ -47,7 +51,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
     private var reasoningDecorator: HideableDecorator? = null
 
     // visibility for testing
-    var reasoningEditorPane: JEditorPane? = null
+    var reasoningMessagePanel: MessagePanel? = null
 
     private var _message: Message = initialMessage
     var message: Message
@@ -71,6 +75,7 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
     override fun dispose() {
         parsed.clear()
         highlightedCodeHelper.disposeAllEditors()
+        reasoningMessagePanel?.dispose()
     }
 
     @Suppress("SENSELESS_COMPARISON") // message can be null
@@ -81,9 +86,13 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
 
         val (reasoning, contentList) = parse(message.contentWithClosedTrailingCodeBlock())
 
-        if (reasoning != null) {
+        if (reasoning != null && !isReasoningPanel) {
             reasoningPanel?.isVisible = true
-            reasoningEditorPane?.text = markdownToHtml(reasoning.markdown)
+            if (reasoningMessagePanel == null) {
+                reasoningMessagePanel = MessagePanel(Message.fromAssistant(reasoning.markdown), project, true)
+            } else {
+                reasoningMessagePanel?.message = Message.fromAssistant(reasoning.markdown)
+            }
             reasoningDecorator?.setOn(reasoning.isInProgress)
         } else {
             reasoningPanel?.isVisible = false
@@ -194,22 +203,23 @@ class MessagePanel(initialMessage: Message, project: Project) : JPanel(), Dispos
             border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
         })
 
-        val outerPanel = JPanel().apply { layout = BorderLayout() }
-        val contentPanel = JPanel().apply { layout = BorderLayout() }
-        reasoningPanel = outerPanel
-        reasoningDecorator = HideableDecorator(outerPanel, "Reasoning", false)
-        reasoningDecorator?.setContentComponent(contentPanel)
+        // Only create reasoning panel if this is not already a reasoning panel
+        if (!isReasoningPanel) {
+            val outerPanel = JPanel().apply { layout = BorderLayout() }
+            val contentPanel = JPanel().apply { layout = BorderLayout() }
+            reasoningPanel = outerPanel
+            reasoningDecorator = HideableDecorator(outerPanel, "Reasoning", false)
+            reasoningDecorator?.setContentComponent(contentPanel)
 
-        reasoningEditorPane = JEditorPane().apply {
-            editorKit = HTMLEditorKitBuilder.simple()
-            isEditable = false
-            background = outerPanel.background
-            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+            reasoningMessagePanel = MessagePanel(Message.fromAssistant(""), project, true).apply {
+                background = outerPanel.background
+                border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+            }
+            contentPanel.add(reasoningMessagePanel, BorderLayout.CENTER)
+            add(outerPanel)
+
+            outerPanel.isVisible = false
         }
-        contentPanel.add(reasoningEditorPane, BorderLayout.CENTER)
-        add(outerPanel)
-
-        outerPanel.isVisible = false
     }
 
     private fun parse(markdown: String): Pair<Reasoning?, List<ParsedContent>> {
