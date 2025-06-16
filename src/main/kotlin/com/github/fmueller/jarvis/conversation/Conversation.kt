@@ -44,6 +44,7 @@ data class Message(
             - ```/plain``` - Sends a chat message without code context
             - ```/copy``` - Copies the conversation to the clipboard
             - ```/model <modelName>``` - Changes the model to use (`default` is `qwen3:4b`)
+            - ```/host <host>``` - Sets the Ollama host (`default` is `http://localhost:11434`)
             """.trimIndent()
         )
 
@@ -87,7 +88,12 @@ class Conversation : Disposable {
 
     fun getLastUserMessage(): Message? = _messages.lastOrNull { it.role == Role.USER }
 
-    fun isFirstUserMessage(): Boolean = _messages.count { it.role == Role.USER && !it.content.startsWith("/model ") } == 1
+    fun isFirstUserMessage(): Boolean =
+        _messages.count {
+            it.role == Role.USER &&
+                !it.content.startsWith("/model ") &&
+                !it.content.startsWith("/host ")
+        } == 1
 
     fun addToMessageBeingGenerated(text: String) {
         val old = _messageBeingGenerated.toString()

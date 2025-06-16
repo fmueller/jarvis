@@ -9,7 +9,7 @@ class ChatCommand : SlashCommand {
     override suspend fun run(conversation: Conversation): Conversation {
         if (!OllamaService.isAvailable()) {
             conversation.addMessage(
-                Message.fromAssistant("I can't access Ollama at ```http://localhost:11434```.")
+                Message.fromAssistant("I can't access Ollama at ```${OllamaService.host}```.")
             )
             return conversation
         }

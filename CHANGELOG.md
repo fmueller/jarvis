@@ -6,6 +6,7 @@
 
 - New `/copy` command copies the whole conversation to the clipboard
 - Automatic Ollama model download
+- New `/host` command to configure Ollama host
 
 ### Changed
 

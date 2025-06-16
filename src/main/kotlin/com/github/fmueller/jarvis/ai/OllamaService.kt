@@ -119,6 +119,15 @@ object OllamaService {
         .connectTimeout(Duration.ofSeconds(2))
         .build()
 
+    /**
+     * Base URL used for all requests to Ollama.
+     */
+    var host: String = "http://localhost:11434"
+        set(value) {
+            field = value
+            assistant = createAiService()
+        }
+
     private interface Assistant {
 
         fun chat(message: String): TokenStream
@@ -212,7 +221,7 @@ object OllamaService {
     fun isAvailable(): Boolean {
         return try {
             val request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:11434"))
+                .uri(URI.create(host))
                 .timeout(Duration.ofSeconds(2))
                 .build()
 
@@ -226,7 +235,7 @@ object OllamaService {
     private fun isModelAvailable(): Boolean {
         return try {
             val request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:11434/api/tags"))
+                .uri(URI.create("$host/api/tags"))
                 .timeout(Duration.ofSeconds(2))
                 .build()
 
@@ -246,7 +255,7 @@ object OllamaService {
     private fun pullModel() {
         try {
             val request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:11434/api/pull"))
+                .uri(URI.create("$host/api/pull"))
                 .timeout(Duration.ofSeconds(2))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
@@ -283,7 +292,7 @@ object OllamaService {
             .streamingChatModel(
                 OllamaStreamingChatModel.builder()
                     .timeout(Duration.ofMinutes(5))
-                    .baseUrl("http://localhost:11434")
+                    .baseUrl(host)
                     .modelName(modelName)
                     .build()
             )

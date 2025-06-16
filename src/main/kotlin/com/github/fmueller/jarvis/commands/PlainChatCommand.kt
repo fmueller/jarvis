@@ -9,7 +9,7 @@ class PlainChatCommand : SlashCommand {
     override suspend fun run(conversation: Conversation): Conversation {
         if (!OllamaService.isAvailable()) {
             conversation.addMessage(
-                Message.fromAssistant("I can't access Ollama at ```http://localhost:11434```. You need to install it first and download the ```qwen3:4b``` model.")
+                Message.fromAssistant("I can't access Ollama at ```${OllamaService.host}```. You need to install it first and download the ```qwen3:4b``` model.")
             )
             return conversation
         }
