@@ -192,19 +192,20 @@ class MessagePanel(
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         )
 
-        add(JBLabel(
-            when (message.role) {
-                Role.ASSISTANT -> "Jarvis"
-                Role.USER -> "You"
-                Role.INFO -> "Info"
-            }
-        ).apply {
-            font = font.deriveFont(Font.BOLD)
-            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
-        })
-
-        // Only create reasoning panel if this is not already a reasoning panel
         if (!isReasoningPanel) {
+            add(
+                JBLabel(
+                    when (message.role) {
+                        Role.ASSISTANT -> "Jarvis"
+                        Role.USER -> "You"
+                        Role.INFO -> "Info"
+                    }
+                ).apply {
+                    font = font.deriveFont(Font.BOLD)
+                    border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
+                }
+            )
+
             val outerPanel = JPanel().apply { layout = BorderLayout() }
             val contentPanel = JPanel().apply { layout = BorderLayout() }
             reasoningPanel = outerPanel
