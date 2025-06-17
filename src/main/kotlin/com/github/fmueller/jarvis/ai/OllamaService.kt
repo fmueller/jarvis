@@ -261,9 +261,11 @@ object OllamaService {
 
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
             val body = response.body()
-            val firstLine = body.lineSequence().firstOrNull() ?: ""
-            val error = runCatching { Json.parseToJsonElement(firstLine).jsonObject["error"]?.jsonPrimitive?.content }
-                .getOrNull()
+            val error = body.lineSequence()
+                .mapNotNull { runCatching {
+                    Json.parseToJsonElement(it).jsonObject["error"]?.jsonPrimitive?.content }.getOrNull()
+                }
+                .firstOrNull()
 
             if (response.statusCode() != 200 || error != null) {
                 error ?: "status ${response.statusCode()}"

@@ -6,6 +6,7 @@ import com.github.fmueller.jarvis.conversation.Role
 import com.sun.net.httpserver.HttpServer
 import junit.framework.TestCase
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 
@@ -28,7 +29,10 @@ class OllamaServiceModelDownloadErrorTest : TestCase() {
             exchange.responseBody.use { it.write(body.toByteArray()) }
         }
         server.createContext("/api/pull") { exchange ->
-            val body = """{"error":"model not found"}"""
+            val body = """
+                       {"status":"pulling manifest"}
+                       {"error":"pull model manifest: file does not exist"}
+                       """.trimIndent()
             exchange.sendResponseHeaders(200, body.toByteArray().size.toLong())
             exchange.responseBody.use { it.write(body.toByteArray()) }
         }
@@ -46,11 +50,14 @@ class OllamaServiceModelDownloadErrorTest : TestCase() {
         val conversation = Conversation()
         conversation.addMessage(Message(Role.USER, "hello"))
 
-        OllamaService.chat(conversation, true)
+        withTimeout(2000) {
+            OllamaService.chat(conversation, true)
+        }
 
         val lastMessage = conversation.messages.last()
         assertEquals(Role.INFO, lastMessage.role)
-        assertTrue(lastMessage.content.contains("model not found"))
+        assertTrue(lastMessage.content.contains("Model download failed"))
+        assertTrue(lastMessage.content.contains("pull model manifest: file does not exist"))
     }
 
     private fun findAvailablePort(): Int {
