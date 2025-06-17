@@ -13,6 +13,7 @@
 
 - Allow `/model` command to accept any Ollama model
 - Set `qwen3:4b` as the default model
+- `/copy` no longer includes model, help, copy or host commands nor info messages
 
 ### Fixed
 

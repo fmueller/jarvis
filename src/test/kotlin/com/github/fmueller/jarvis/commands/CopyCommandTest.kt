@@ -49,4 +49,29 @@ class CopyCommandTest : TestCase() {
         assertFalse(prompt.contains("Code Context"))
         assertFalse(prompt.contains("println()"))
     }
+
+    fun `test buildPrompt ignores commands and info messages`() {
+        val conversation = Conversation()
+        conversation.addMessage(Message.fromAssistant("Hi"))
+        conversation.addMessage(Message(Role.USER, "/model llama"))
+        conversation.addMessage(Message.info("Model changed"))
+        conversation.addMessage(Message(Role.USER, "/host http://1.2.3.4"))
+        conversation.addMessage(Message.info("Host changed"))
+        conversation.addMessage(Message(Role.USER, "/help"))
+        conversation.addMessage(Message.HELP_MESSAGE)
+        conversation.addMessage(Message(Role.USER, "/copy"))
+        conversation.addMessage(Message.info("Conversation copied"))
+        conversation.addMessage(Message(Role.USER, "Explain"))
+        conversation.addMessage(Message.fromAssistant("Sure"))
+
+        val prompt = CopyCommand().buildPrompt(conversation)
+
+        assertTrue(prompt.contains("Explain"))
+        assertTrue(prompt.contains("Sure"))
+        assertFalse(prompt.contains("Model changed"))
+        assertFalse(prompt.contains("/model"))
+        assertFalse(prompt.contains("/host"))
+        assertFalse(prompt.contains("/help"))
+        assertFalse(prompt.contains("Conversation copied"))
+    }
 }
