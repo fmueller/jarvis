@@ -13,7 +13,6 @@
 - Allow `/model` command to accept any Ollama model
 - Set `qwen3:4b` as the default model
 - Restore syntax highlighting for generated code snippets
-- Show model download errors immediately instead of waiting 10 minutes
 
 ## [1.6.0] - 2024-11-27
 
