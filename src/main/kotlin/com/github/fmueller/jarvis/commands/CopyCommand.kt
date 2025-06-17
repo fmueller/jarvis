@@ -26,7 +26,17 @@ class CopyCommand : SlashCommand {
         )
         builder.appendLine()
         conversation.messages.forEach { message ->
+            if (message.role == Role.INFO) return@forEach
+
             if (message.role == Role.USER) {
+                val content = message.content.trim()
+                val isIgnoredCommand = content == "/copy" ||
+                    content == "/help" ||
+                    content == "/?" ||
+                    content.startsWith("/model ") ||
+                    content.startsWith("/host ")
+                if (isIgnoredCommand) return@forEach
+
                 builder.appendLine(
                     "[User]: " +
                         message.contentWithClosedTrailingCodeBlock().removePrefix("/plain ")
@@ -37,9 +47,11 @@ class CopyCommand : SlashCommand {
                     builder.appendLine(formatCode(code))
                 }
             }
-            if (message.role == Role.ASSISTANT) {
+
+            if (message.role == Role.ASSISTANT && !message.isHelpMessage()) {
                 builder.appendLine("[Assistant]: ${message.contentWithClosedTrailingCodeBlock()}")
             }
+
             builder.appendLine()
         }
         return builder.toString().trimEnd()
