@@ -8,6 +8,11 @@ import kotlinx.coroutines.runBlocking
 
 class HostCommandTest : TestCase() {
 
+    override fun setUp() {
+        super.setUp()
+        OllamaService.host = "http://localhost:11434"
+    }
+
     override fun tearDown() {
         OllamaService.host = "http://localhost:11434"
     }
