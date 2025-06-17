@@ -2,6 +2,8 @@ package com.github.fmueller.jarvis.conversation
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.components.JBLabel
+import javax.swing.JButton
+import javax.swing.JPanel
 
 class MessagePanelTest : BasePlatformTestCase() {
 
@@ -9,7 +11,7 @@ class MessagePanelTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        messagePanel = MessagePanel(Message.fromAssistant("Hello, I am Jarvis."), project)
+        messagePanel = MessagePanel(Message.fromAssistant("Hello, I am Jarvis."), project, false)
     }
 
     override fun tearDown() {
@@ -100,8 +102,50 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test info message label`() {
-        val panel = MessagePanel(Message.info("Downloading"), project)
+        val panel = MessagePanel(Message.info("Downloading"), project, false)
         val label = panel.getComponent(0) as JBLabel
         assertEquals("Info", label.text)
+    }
+
+    fun `test reasoning block is parsed`() {
+        messagePanel.message = Message.fromAssistant("<think>Reason</think>Hello")
+
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.reasoningMessagePanel?.message?.content?.contains("Reason") ?: false)
+    }
+
+    fun `test reasoning panel toggle functionality`() {
+        // Set a message with reasoning to make the reasoning panel visible
+        messagePanel.message = Message.fromAssistant("<think>Reasoning content</think>Hello")
+
+        // Get the reasoning panel components using reflection
+        val reasoningPanelField = MessagePanel::class.java.getDeclaredField("reasoningPanel")
+        reasoningPanelField.isAccessible = true
+        val reasoningPanel = reasoningPanelField.get(messagePanel) as JPanel
+
+        val reasoningContentPanelField = MessagePanel::class.java.getDeclaredField("reasoningContentPanel")
+        reasoningContentPanelField.isAccessible = true
+        val reasoningContentPanel = reasoningContentPanelField.get(messagePanel) as JPanel
+
+        val reasoningHeaderButtonField = MessagePanel::class.java.getDeclaredField("reasoningHeaderButton")
+        reasoningHeaderButtonField.isAccessible = true
+        val reasoningHeaderButton = reasoningHeaderButtonField.get(messagePanel) as JButton
+
+        // Verify initial state
+        assertTrue(reasoningPanel.isVisible)
+        assertFalse(reasoningContentPanel.isVisible)
+        assertEquals("Reasoning", reasoningHeaderButton.text)
+
+        // Click the button to expand the panel
+        reasoningHeaderButton.doClick()
+
+        // Verify expanded state
+        assertTrue(reasoningContentPanel.isVisible)
+
+        // Click the button again to collapse the panel
+        reasoningHeaderButton.doClick()
+
+        // Verify collapsed state
+        assertFalse(reasoningContentPanel.isVisible)
     }
 }

@@ -27,9 +27,12 @@ class CopyCommand : SlashCommand {
         builder.appendLine()
         conversation.messages.forEach { message ->
             if (message.role == Role.USER) {
-                builder.appendLine("[User]: ${message.contentWithClosedTrailingCodeBlock().removePrefix("/plain ")}")
+                builder.appendLine(
+                    "[User]: " +
+                        message.contentWithClosedTrailingCodeBlock().removePrefix("/plain ")
+                )
                 val code = message.codeContext?.selected
-                if (code != null) {
+                if (code != null && !message.content.startsWith("/plain ")) {
                     builder.appendLine("[Code Context]:")
                     builder.appendLine(formatCode(code))
                 }

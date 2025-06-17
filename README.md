@@ -33,6 +33,8 @@ Available commands:
 - ```/model <modelName>``` - Changes the model to use (model name `default` is `qwen3:4b`)
 - ```/host <host>``` - Sets the Ollama host (host `default` is `http://localhost:11434`)
 
+When using reasoning models with Ollama, Jarvis shows their internal thoughts in an expandable section at the top of each answer.
+
 ## License
 
 This project is licensed under the [MIT](LICENSE).
