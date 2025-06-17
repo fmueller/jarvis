@@ -21,6 +21,8 @@ import java.time.Duration
 
 object OllamaService {
 
+    var port = 11434
+
     // TODO add something about selected code has higher priority than the open files or references
     private val systemPrompt = """
                     You are Jarvis, an intelligent and helpful coding assistant on the level of an expert software developer. You assist users by providing code completions, debugging tips, explanations, and suggestions in various programming languages. Your responses are clear, concise, and directly address the user's needs.
@@ -151,19 +153,26 @@ object OllamaService {
             return@withContext ""
         }
 
-        val projectPromptPart =
-            if (conversation.isFirstUserMessage())
+        val projectPromptPart = if (conversation.isFirstUserMessage()) {
+            val lastUserMessage = conversation.getLastUserMessage()
+            val codeContext = lastUserMessage?.codeContext
+            val projectName = codeContext?.projectName
+
+            if (projectName != null) {
                 """
                 |
-                |Project: ${conversation.getLastUserMessage()!!.codeContext!!.projectName}
+                |Project: $projectName
                 |
                 """.trimMargin()
-            else
+            } else {
                 ""
+            }
+        } else {
+            ""
+        }
 
-        val nextMessagePrompt =
-            if (conversation.getLastUserMessage() != null) {
-                val lastUserMessage = conversation.getLastUserMessage()!!
+        val nextMessagePrompt = conversation.getLastUserMessage()?.let {
+            lastUserMessage ->
                 """
                 |[User]: ${lastUserMessage.contentWithClosedTrailingCodeBlock().removePrefix("/plain ")}
                 |$projectPromptPart
@@ -172,9 +181,7 @@ object OllamaService {
                 |${getCodeContextPrompt(lastUserMessage.codeContext, !lastUserMessage.isHelpMessage() && useCodeContext)}
                 |
                 |[Assistant]: """.trimMargin()
-            } else {
-                "Tell me that there was no message provided."
-            }
+        } ?: "Tell me that there was no message provided."
 
         val responseInFlight = StringBuilder()
         try {
@@ -221,7 +228,11 @@ object OllamaService {
     fun isAvailable(): Boolean {
         return try {
             val request = HttpRequest.newBuilder()
+<<<<<<< codex/add-host-command-for-ollama-interaction
                 .uri(URI.create(host))
+=======
+                .uri(URI.create("http://localhost:$port"))
+>>>>>>> main
                 .timeout(Duration.ofSeconds(2))
                 .build()
 
@@ -235,7 +246,11 @@ object OllamaService {
     private fun isModelAvailable(): Boolean {
         return try {
             val request = HttpRequest.newBuilder()
+<<<<<<< codex/add-host-command-for-ollama-interaction
                 .uri(URI.create("$host/api/tags"))
+=======
+                .uri(URI.create("http://localhost:$port/api/tags"))
+>>>>>>> main
                 .timeout(Duration.ofSeconds(2))
                 .build()
 
@@ -252,18 +267,34 @@ object OllamaService {
         }
     }
 
-    private fun pullModel() {
-        try {
+    private fun pullModel(): String? {
+        return try {
             val request = HttpRequest.newBuilder()
+<<<<<<< codex/add-host-command-for-ollama-interaction
                 .uri(URI.create("$host/api/pull"))
+=======
+                .uri(URI.create("http://localhost:$port/api/pull"))
+>>>>>>> main
                 .timeout(Duration.ofSeconds(2))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
                 .build()
 
-            client.send(request, HttpResponse.BodyHandlers.discarding())
-        } catch (_: Exception) {
-            // ignore
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val body = response.body()
+            val error = body.lineSequence()
+                .mapNotNull { runCatching {
+                    Json.parseToJsonElement(it).jsonObject["error"]?.jsonPrimitive?.content }.getOrNull()
+                }
+                .firstOrNull()
+
+            if (response.statusCode() != 200 || error != null) {
+                error ?: "status ${response.statusCode()}"
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.message
         }
     }
 
@@ -271,7 +302,11 @@ object OllamaService {
         if (isModelAvailable()) return true
 
         conversation.addMessage(Message.info("Downloading model..."))
-        pullModel()
+        val pullError = pullModel()
+        if (pullError != null) {
+            conversation.addMessage(Message.info("Model download failed: $pullError"))
+            return false
+        }
 
         val timeout = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis()
         while (System.currentTimeMillis() < timeout) {
@@ -292,7 +327,11 @@ object OllamaService {
             .streamingChatModel(
                 OllamaStreamingChatModel.builder()
                     .timeout(Duration.ofMinutes(5))
+<<<<<<< codex/add-host-command-for-ollama-interaction
                     .baseUrl(host)
+=======
+                    .baseUrl("http://localhost:$port")
+>>>>>>> main
                     .modelName(modelName)
                     .build()
             )
