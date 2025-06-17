@@ -87,3 +87,13 @@
 - Command to start a new conversation
 - Help command to list all available commands
 - Support for different themes
+
+[Unreleased]: https://github.com/fmueller/jarvis/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/fmueller/jarvis/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/fmueller/jarvis/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/fmueller/jarvis/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/fmueller/jarvis/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/fmueller/jarvis/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/fmueller/jarvis/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/fmueller/jarvis/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/fmueller/jarvis/commits/v1.0.0
