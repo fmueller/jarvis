@@ -12,10 +12,12 @@ import java.net.ServerSocket
 class OllamaServiceModelDownloadErrorTest : TestCase() {
 
     private lateinit var server: HttpServer
+    private var port: Int = 0
 
     override fun setUp() {
         super.setUp()
-        server = HttpServer.create(InetSocketAddress(findAvailablePort()), 0)
+        port = findAvailablePort()
+        server = HttpServer.create(InetSocketAddress(port), 0)
         server.createContext("/") { exchange ->
             exchange.sendResponseHeaders(200, -1)
             exchange.close()
@@ -31,6 +33,8 @@ class OllamaServiceModelDownloadErrorTest : TestCase() {
             exchange.responseBody.use { it.write(body.toByteArray()) }
         }
         server.start()
+        OllamaService.port = port
+        OllamaService.clearChatMemory()
     }
 
     override fun tearDown() {
