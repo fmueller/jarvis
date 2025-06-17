@@ -7,14 +7,15 @@ import com.sun.net.httpserver.HttpServer
 import junit.framework.TestCase
 import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
+import java.net.ServerSocket
 
-class OllamaServiceDownloadErrorTest : TestCase() {
+class OllamaServiceModelDownloadErrorTest : TestCase() {
 
     private lateinit var server: HttpServer
 
     override fun setUp() {
         super.setUp()
-        server = HttpServer.create(InetSocketAddress(11434), 0)
+        server = HttpServer.create(InetSocketAddress(findAvailablePort()), 0)
         server.createContext("/") { exchange ->
             exchange.sendResponseHeaders(200, -1)
             exchange.close()
@@ -46,5 +47,11 @@ class OllamaServiceDownloadErrorTest : TestCase() {
         val lastMessage = conversation.messages.last()
         assertEquals(Role.INFO, lastMessage.role)
         assertTrue(lastMessage.content.contains("model not found"))
+    }
+
+    private fun findAvailablePort(): Int {
+        return ServerSocket(0).use { socket ->
+            socket.localPort
+        }
     }
 }
