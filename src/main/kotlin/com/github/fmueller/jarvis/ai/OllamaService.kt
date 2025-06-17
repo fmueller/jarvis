@@ -142,19 +142,26 @@ object OllamaService {
             return@withContext ""
         }
 
-        val projectPromptPart =
-            if (conversation.isFirstUserMessage())
+        val projectPromptPart = if (conversation.isFirstUserMessage()) {
+            val lastUserMessage = conversation.getLastUserMessage()
+            val codeContext = lastUserMessage?.codeContext
+            val projectName = codeContext?.projectName
+
+            if (projectName != null) {
                 """
                 |
-                |Project: ${conversation.getLastUserMessage()!!.codeContext!!.projectName}
+                |Project: $projectName
                 |
                 """.trimMargin()
-            else
+            } else {
                 ""
+            }
+        } else {
+            ""
+        }
 
-        val nextMessagePrompt =
-            if (conversation.getLastUserMessage() != null) {
-                val lastUserMessage = conversation.getLastUserMessage()!!
+        val nextMessagePrompt = conversation.getLastUserMessage()?.let {
+            lastUserMessage ->
                 """
                 |[User]: ${lastUserMessage.contentWithClosedTrailingCodeBlock().removePrefix("/plain ")}
                 |$projectPromptPart
@@ -163,9 +170,7 @@ object OllamaService {
                 |${getCodeContextPrompt(lastUserMessage.codeContext, !lastUserMessage.isHelpMessage() && useCodeContext)}
                 |
                 |[Assistant]: """.trimMargin()
-            } else {
-                "Tell me that there was no message provided."
-            }
+        } ?: "Tell me that there was no message provided."
 
         val responseInFlight = StringBuilder()
         try {
