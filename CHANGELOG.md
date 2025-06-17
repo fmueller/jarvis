@@ -5,7 +5,8 @@
 ### Added
 
 - Automatic Ollama model download
-- Display reasoning from models
+- Support for reasoning models
+- New `/host` command to configure Ollama host
 - New `/copy` command copies the whole conversation to the clipboard
 
 ### Changed

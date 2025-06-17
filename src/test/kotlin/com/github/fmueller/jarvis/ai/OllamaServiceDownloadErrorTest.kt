@@ -13,11 +13,10 @@ import java.net.ServerSocket
 class OllamaServiceModelDownloadErrorTest : TestCase() {
 
     private lateinit var server: HttpServer
-    private var port: Int = 0
 
     override fun setUp() {
         super.setUp()
-        port = findAvailablePort()
+        val port = findAvailablePort()
         server = HttpServer.create(InetSocketAddress(port), 0)
         server.createContext("/") { exchange ->
             exchange.sendResponseHeaders(200, -1)
@@ -37,8 +36,7 @@ class OllamaServiceModelDownloadErrorTest : TestCase() {
             exchange.responseBody.use { it.write(body.toByteArray()) }
         }
         server.start()
-        OllamaService.port = port
-        OllamaService.clearChatMemory()
+        OllamaService.host = "http://localhost:$port"
     }
 
     override fun tearDown() {

@@ -21,6 +21,11 @@ object SlashCommandParser {
             return ModelCommand(modelName)
         }
 
+        if (trimmedMessage.startsWith("/host ")) {
+            val host = trimmedMessage.removePrefix("/host ").trim()
+            return HostCommand(host)
+        }
+
         if (trimmedMessage == "/copy") {
             return CopyCommand()
         }
