@@ -4,14 +4,18 @@
 
 ### Added
 
-- New `/copy` command copies the whole conversation to the clipboard
 - Automatic Ollama model download
+- Display reasoning from models
+- New `/copy` command copies the whole conversation to the clipboard
 
 ### Changed
 
 - Allow `/model` command to accept any Ollama model
 - Set `qwen3:4b` as the default model
-- `/copy` ignores code context for `/plain` messages
+
+### Fixed
+
+- Restore syntax highlighting for generated code snippets
 
 ## [1.6.0] - 2024-11-27
 
