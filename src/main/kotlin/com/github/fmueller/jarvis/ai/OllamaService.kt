@@ -13,6 +13,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.jetbrains.annotations.VisibleForTesting
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -237,7 +238,8 @@ object OllamaService {
         }
     }
 
-    private fun isModelAvailable(): Boolean {
+    @VisibleForTesting
+    fun isModelAvailable(): Boolean {
         return try {
             val request = HttpRequest.newBuilder()
                 .uri(URI.create("$host/api/tags"))
@@ -250,7 +252,7 @@ object OllamaService {
             val models = json.jsonObject["models"]?.jsonArray ?: return false
             models.any {
                 val name = it.jsonObject["name"]?.jsonPrimitive?.content ?: ""
-                name.startsWith(modelName)
+                name.lowercase().startsWith(modelName.lowercase())
             }
         } catch (e: Exception) {
             false

@@ -8,6 +8,11 @@ import kotlinx.coroutines.runBlocking
 
 class ModelCommandTest : TestCase() {
 
+    override fun setUp() {
+        super.setUp()
+        OllamaService.modelName = "qwen3:4b"
+    }
+
     override fun tearDown() {
         OllamaService.modelName = "qwen3:4b"
     }
