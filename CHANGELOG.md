@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [1.7.1] - 2025-06-18
+
+### Fixed
+
+- Model availability check could fail on case-sensitive systems like macOS
+
 ## [1.7.0] - 2025-06-17
 
 ### Added
