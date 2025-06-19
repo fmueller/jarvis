@@ -4,9 +4,12 @@ import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.lang.Language
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.EditorFactory
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.editor.Document
+import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiFileFactory
 import com.intellij.testFramework.LightVirtualFile
 import java.time.LocalDateTime
@@ -36,11 +39,12 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
             LocalDateTime.now().format(formatter)
         }.${fileType.defaultExtension}"
 
-        val psiFile = PsiFileFactory.getInstance(project)
-            .createFileFromText(fileName, language, code.trim())
-
-        val virtualFile = psiFile.virtualFile as LightVirtualFile
-        val document = psiFile.viewProvider.document
+        val result = ApplicationManager.getApplication().runReadAction<Triple<PsiFile, LightVirtualFile, Document>> {
+            val psiFile = PsiFileFactory.getInstance(project)
+                .createFileFromText(fileName, language, code.trim())
+            Triple(psiFile, psiFile.virtualFile as LightVirtualFile, psiFile.viewProvider.document)
+        }
+        val (psiFile, virtualFile, document) = result
 
         val editor = EditorFactory.getInstance().createEditor(document, project, fileType, true) as EditorEx
         editor.setFile(virtualFile)
