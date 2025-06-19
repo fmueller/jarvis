@@ -70,6 +70,29 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("println(\"Hello, World!\")", parsedCode.content)
     }
 
+    fun `test indented closing code block is rendered correctly`() {
+        messagePanel.message = Message.fromAssistant("```kotlin\nprintln(\"Hello, World!\")\n    ```")
+
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
+
+        val parsedCode = messagePanel.parsed[0] as MessagePanel.Code
+        assertEquals("kotlin", parsedCode.languageId)
+        assertEquals("println(\"Hello, World!\")", parsedCode.content)
+    }
+
+    fun `test code block without preceding blank line is parsed correctly`() {
+        messagePanel.message = Message.fromAssistant("Here is some code:\n```kotlin\nprintln(\"Hello, World!\")\n```")
+
+        assertEquals(2, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Content)
+        assertTrue(messagePanel.parsed[1] is MessagePanel.Code)
+
+        val parsedCode = messagePanel.parsed[1] as MessagePanel.Code
+        assertEquals("kotlin", parsedCode.languageId)
+        assertEquals("println(\"Hello, World!\")", parsedCode.content)
+    }
+
     fun `test empty code block is rendered correctly as code block`() {
         messagePanel.message = Message.fromAssistant("```kotlin\n\n```")
 
