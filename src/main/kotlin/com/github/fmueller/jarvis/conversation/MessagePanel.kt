@@ -33,7 +33,7 @@ class MessagePanel(
 ) : JPanel(), Disposable {
 
     private companion object {
-        private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n```", Pattern.DOTALL)
+        private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n\\s*```", Pattern.DOTALL)
         private val assistantBgColor = { UIUtil.getPanelBackground() }
         private val userBgColor = { UIUtil.getTextFieldBackground() }
     }
