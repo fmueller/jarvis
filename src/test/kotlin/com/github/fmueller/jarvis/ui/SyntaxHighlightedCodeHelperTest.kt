@@ -1,16 +1,21 @@
 package com.github.fmueller.jarvis.ui
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
+import java.util.concurrent.TimeUnit
 
 class SyntaxHighlightedCodeHelperTest : BasePlatformTestCase() {
 
     fun `test editor has syntax highlighting`() {
         val helper = SyntaxHighlightedCodeHelper(project)
-        val editor = helper.getHighlightedEditor("xml", "<some>content</some>")
+        val editor = runInEdtAndGet {
+            helper.getHighlightedEditor("xml", "<some>content</some>")
+        }
         assertNotNull(editor)
         editor as EditorEx
 
@@ -27,7 +32,9 @@ class SyntaxHighlightedCodeHelperTest : BasePlatformTestCase() {
 
     fun `test editor works with unsupported language`() {
         val helper = SyntaxHighlightedCodeHelper(project)
-        val editor = helper.getHighlightedEditor("abc", "<some>content</some>")
+        val editor = runInEdtAndGet {
+            helper.getHighlightedEditor("abc", "<some>content</some>")
+        }
         assertNotNull(editor)
         helper.disposeEditor(editor!!)
     }
@@ -59,5 +66,14 @@ class SyntaxHighlightedCodeHelperTest : BasePlatformTestCase() {
             helper.getHighlightedEditor("xml", "anotherTest")
         }
         helper.disposeAllEditors()
+    }
+
+    fun `test getHighlightedEditor returns null on non-EDT`() {
+        val helper = SyntaxHighlightedCodeHelper(project)
+        val future = ApplicationManager.getApplication().executeOnPooledThread<Editor?> {
+            helper.getHighlightedEditor("xml", "test")
+        }
+        val editor = future.get(5, TimeUnit.SECONDS)
+        assertNull(editor)
     }
 }
