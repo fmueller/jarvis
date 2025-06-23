@@ -3,6 +3,8 @@ package com.github.fmueller.jarvis.ui
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.testFramework.runInEdtAndWait
 
 class SyntaxHighlightedCodeHelperTest : BasePlatformTestCase() {
 
@@ -27,6 +29,35 @@ class SyntaxHighlightedCodeHelperTest : BasePlatformTestCase() {
         val helper = SyntaxHighlightedCodeHelper(project)
         val editor = helper.getHighlightedEditor("abc", "<some>content</some>")
         assertNotNull(editor)
-        helper.disposeEditor(editor as EditorEx)
+        helper.disposeEditor(editor!!)
+    }
+
+    fun `test getHighlightedEditor with empty content`() {
+        val helper = SyntaxHighlightedCodeHelper(project)
+        val editor = runInEdtAndGet {
+            helper.getHighlightedEditor("xml", "")
+        }
+        assertNotNull(editor)
+        helper.disposeEditor(editor!!)
+    }
+
+    fun `test disposeEditor with existing editor`() {
+        val helper = SyntaxHighlightedCodeHelper(project)
+        val editor = runInEdtAndGet {
+            helper.getHighlightedEditor("xml", "test")
+        }
+        assertNotNull(editor)
+        helper.disposeEditor(editor!!)
+    }
+
+    fun `test disposeAllEditors`() {
+        val helper = SyntaxHighlightedCodeHelper(project)
+        runInEdtAndWait {
+            helper.getHighlightedEditor("xml", "test")
+        }
+        runInEdtAndWait {
+            helper.getHighlightedEditor("xml", "anotherTest")
+        }
+        helper.disposeAllEditors()
     }
 }
