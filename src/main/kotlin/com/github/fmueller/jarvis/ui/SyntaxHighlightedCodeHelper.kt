@@ -21,11 +21,15 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
     private val createdEditors = mutableListOf<Editor>()
 
     companion object {
-        const val EDITOR_PREFIX = "SyntaxHighlightedCodeHelper.HighlightedCode."
+        const val EDITOR_PREFIX = "SyntaxHighlightedCodeHelper.HighlightedCode"
         private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS")
     }
 
     fun getHighlightedEditor(languageId: String, code: String): Editor? {
+        if (!ApplicationManager.getApplication().isDispatchThread) {
+            return null
+        }
+
         val language = Language.findLanguageByID(languageId)
             ?: Language.findLanguageByID(languageId.uppercase())
             ?: Language.findLanguageByID("IgnoreLang")
@@ -39,12 +43,11 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
             LocalDateTime.now().format(formatter)
         }.${fileType.defaultExtension}"
 
-        val result = ApplicationManager.getApplication().runReadAction<Triple<PsiFile, LightVirtualFile, Document>> {
-            val psiFile = PsiFileFactory.getInstance(project)
-                .createFileFromText(fileName, language, code.trim())
-            Triple(psiFile, psiFile.virtualFile as LightVirtualFile, psiFile.viewProvider.document)
-        }
-        val (psiFile, virtualFile, document) = result
+        val (psiFile, virtualFile, document) = ApplicationManager.getApplication()
+            .runReadAction<Triple<PsiFile, LightVirtualFile, Document>> {
+                val psiFile = PsiFileFactory.getInstance(project).createFileFromText(fileName, language, code.trim())
+                Triple(psiFile, psiFile.virtualFile as LightVirtualFile, psiFile.viewProvider.document)
+            }
 
         val editor = EditorFactory.getInstance().createEditor(document, project, fileType, true) as EditorEx
         editor.setFile(virtualFile)
