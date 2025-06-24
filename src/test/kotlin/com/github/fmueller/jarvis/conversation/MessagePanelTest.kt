@@ -1,8 +1,11 @@
 package com.github.fmueller.jarvis.conversation
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBScrollPane
 import javax.swing.JButton
+import javax.swing.JEditorPane
 import javax.swing.JPanel
 
 class MessagePanelTest : BasePlatformTestCase() {
@@ -170,5 +173,25 @@ class MessagePanelTest : BasePlatformTestCase() {
 
         // Verify collapsed state
         assertFalse(reasoningContentPanel.isVisible)
+    }
+
+    fun `test updating content wrapped in scrollpane`() {
+        // prepare a JBScrollPane wrapping a JEditorPane
+        val editorPane = JEditorPane().apply {
+            text = "Hello, "
+        }
+        val scroll = JBScrollPane(editorPane)
+
+        runInEdtAndGet {
+            messagePanel.removeAll()
+            messagePanel.parsed.clear()
+            messagePanel.parsed.add(MessagePanel.Content("Hello, "))
+            messagePanel.add(scroll)
+        }
+
+        // trigger an update to new content
+        messagePanel.message = Message.fromAssistant("Hello, I am Jarvis.")
+
+        assertEquals("<p>Hello, I am Jarvis.</p>", editorPane.text.trim())
     }
 }

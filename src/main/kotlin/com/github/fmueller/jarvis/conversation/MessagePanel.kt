@@ -128,8 +128,16 @@ class MessagePanel(
 
                 if (i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
                     when (old) {
-                        is Content -> getComponent(componentCount - 1).let {
-                            (it as JEditorPane).text = markdownToHtml((new as Content).markdown)
+                        is Content -> {
+                            val component = getComponent(componentCount - 1)
+                            val editorPane = when (component) {
+                                is JEditorPane -> component
+                                is JBScrollPane if component.viewport.view is JEditorPane -> component.viewport.view as JEditorPane
+                                else -> throw IllegalStateException(
+                                    "Expected a JEditorPane (or a JBScrollPane wrapping one) but got ${component.javaClass.name}"
+                                )
+                            }
+                            editorPane.text = markdownToHtml((new as Content).markdown)
                         }
 
                         is Code -> {
