@@ -191,7 +191,7 @@ object OllamaService {
                         responseInFlight.append(update)
                         conversation.addToMessageBeingGenerated(update)
                     }
-                    .onCompleteResponse { response -> continuation.resume(response.aiMessage().text()) { /* noop */ } }
+                    .onCompleteResponse { response -> continuation.resumeWith(Result.success(response.aiMessage().text())) }
                     .onError { error -> continuation.cancel(Exception(error.message)) }
                     .start()
 
