@@ -20,13 +20,7 @@ import org.jdesktop.swingx.VerticalLayout
 import java.awt.BorderLayout
 import java.awt.Font
 import java.util.regex.Pattern
-import javax.swing.BorderFactory
-import javax.swing.JButton
-import javax.swing.JEditorPane
-import javax.swing.JPanel
-import javax.swing.SwingConstants
-import javax.swing.SwingUtilities
-import javax.swing.Timer
+import javax.swing.*
 
 class MessagePanel(
     initialMessage: Message,
@@ -83,6 +77,7 @@ class MessagePanel(
     private var reasoningPanel: JPanel? = null
     private var reasoningHeaderButton: JButton? = null
     private var reasoningContentPanel: JPanel? = null
+    private var hasReasoningContent = false
 
     // visibility for testing
     var reasoningMessagePanel: MessagePanel? = null
@@ -126,6 +121,7 @@ class MessagePanel(
         parsed.clear()
         highlightedCodeHelper.disposeAllEditors()
         reasoningMessagePanel?.dispose()
+        hasReasoningContent = false
     }
 
     private fun scheduleSmartUpdate(newMessage: Message) {
@@ -169,18 +165,20 @@ class MessagePanel(
 
         val (reasoning, contentList) = parse(messageToUpdate.contentWithClosedTrailingCodeBlock())
 
-        if (reasoning != null && !isReasoningPanel) {
-            reasoningPanel?.isVisible = true
-            if (reasoningMessagePanel == null) {
-                reasoningMessagePanel = MessagePanel(Message.fromAssistant(reasoning.markdown), project, true, isTestMode)
-            } else {
-                reasoningMessagePanel?.message = Message.fromAssistant(reasoning.markdown)
+        if (!isReasoningPanel) {
+            if (reasoning != null) {
+                hasReasoningContent = true
+                reasoningPanel?.isVisible = true
+                if (reasoningMessagePanel == null) {
+                    reasoningMessagePanel = MessagePanel(Message.fromAssistant(reasoning.markdown), project, true, isTestMode)
+                } else {
+                    reasoningMessagePanel?.message = Message.fromAssistant(reasoning.markdown)
+                }
+                reasoningHeaderButton?.text = "Reasoning${if (reasoning.isInProgress) "..." else ""}"
+                isReasoningExpanded = reasoning.isInProgress
+            } else if (!hasReasoningContent) {
+                reasoningPanel?.isVisible = false
             }
-            reasoningContentPanel?.isVisible = reasoning.isInProgress
-            reasoningHeaderButton?.text = "Reasoning${if (reasoning.isInProgress) "..." else ""}"
-            isReasoningExpanded = reasoning.isInProgress
-        } else {
-            reasoningPanel?.isVisible = false
         }
 
         val newParsedContent = contentList
