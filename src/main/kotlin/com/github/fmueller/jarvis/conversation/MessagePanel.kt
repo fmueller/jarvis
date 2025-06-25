@@ -269,9 +269,7 @@ class MessagePanel(
             return
         }
 
-        parsed.clear()
-        removeAll()
-        highlightedCodeHelper.disposeAllEditors()
+        dispose()
 
         layout = VerticalLayout(5)
         background = when (message.role) {
@@ -332,7 +330,7 @@ class MessagePanel(
                 background = outerPanel.background
                 border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
             }
-            contentPanel.add(reasoningMessagePanel, BorderLayout.CENTER)
+            contentPanel.add(reasoningMessagePanel!!, BorderLayout.CENTER)
             contentPanel.isVisible = false
             isReasoningExpanded = false
 
