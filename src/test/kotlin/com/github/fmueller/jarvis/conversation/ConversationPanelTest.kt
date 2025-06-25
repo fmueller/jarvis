@@ -2,6 +2,7 @@ package com.github.fmueller.jarvis.conversation
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.util.ui.UIUtil
 
 class ConversationPanelTest : BasePlatformTestCase() {
 
@@ -55,7 +56,7 @@ class ConversationPanelTest : BasePlatformTestCase() {
         val initialCount = runInEdtAndGet { conversationPanel.panel.componentCount }
 
         val messages = listOf(
-            Message.fromAssistant("Hello! How can I help you?"),
+            Conversation.greetingMessage(),
             Message.fromAssistant("New message")
         )
 
@@ -76,7 +77,7 @@ class ConversationPanelTest : BasePlatformTestCase() {
         }
 
         val messages = listOf(
-            Message.fromAssistant("Hello! How can I help you?"),
+            Conversation.greetingMessage(),
             Message.fromAssistant("In progress")
         )
 
@@ -97,9 +98,9 @@ class ConversationPanelTest : BasePlatformTestCase() {
         val initialCount = runInEdtAndGet { conversationPanel.panel.componentCount }
 
         val messages = listOf(
-            Message.fromAssistant("Hello! How can I help you?"),
+            Conversation.greetingMessage(),
             Message.fromAssistant("Message 1"),
-            Message(Role.USER, "Message 2"),
+            Message.fromUser("Message 2"),
             Message.fromAssistant("Message 3")
         )
 
@@ -128,5 +129,72 @@ class ConversationPanelTest : BasePlatformTestCase() {
         assertTrue("Should contain Message 1", messageContents.contains("Message 1"))
         assertTrue("Should contain Message 2", messageContents.contains("Message 2"))
         assertTrue("Should contain Message 3", messageContents.contains("Message 3"))
+    }
+
+    fun `test constructor renders existing conversation messages`() {
+        val conversation = Conversation().apply {
+            clearMessages()
+            addMessage(Message.fromUser("User message"))
+            addMessage(Message.fromAssistant("Assistant message"))
+        }
+
+        val panel = ConversationPanel(conversation, project)
+
+        UIUtil.invokeAndWaitIfNeeded {
+            val expectedCount = conversation.messages.size
+            assertEquals(
+                "Panel should render $expectedCount messages from constructor",
+                expectedCount,
+                panel.panel.componentCount
+            )
+            conversation.messages.forEachIndexed { index, message ->
+                val component = panel.panel.getComponent(index)
+                assertTrue("Component at $index should be a MessagePanel", component is MessagePanel)
+                assertEquals("Rendered message at $index should match",
+                    message, (component as MessagePanel).message)
+            }
+        }
+    }
+
+    fun `test updateSmooth clears and re-renders when messages decrease`() {
+        val initialMessages = listOf(
+            Message.fromUser("First"),
+            Message.fromAssistant("Second"),
+            Message.fromUser("Third")
+        )
+        runInEdtAndGet {
+            conversationPanel.updateSmooth(initialMessages)
+        }
+        val initialCount = runInEdtAndGet { conversationPanel.panel.componentCount }
+        assertEquals(
+            "Panel should have ${initialMessages.size} components after initial update",
+            initialMessages.size,
+            initialCount
+        )
+
+        // Now simulate clearing to a smaller set of messages,
+        // e.g., when a conversation gets cleared
+        val fewerMessages = listOf(
+            Message.fromAssistant("OnlyOne")
+        )
+        runInEdtAndGet {
+            conversationPanel.updateSmooth(fewerMessages)
+        }
+        val newCount = runInEdtAndGet { conversationPanel.panel.componentCount }
+        assertEquals(
+            "Panel should have ${fewerMessages.size} component after clearing and re-render",
+            fewerMessages.size,
+            newCount
+        )
+
+        assertNull("updatePanel should be null after panel is cleared", conversationPanel.updatePanel)
+
+        // Verify the remaining message is rendered correctly
+        runInEdtAndGet {
+            val comp = conversationPanel.panel.getComponent(0)
+            assertTrue("Component should be a MessagePanel", comp is MessagePanel)
+            assertEquals("Rendered message should match the new list",
+                fewerMessages[0], (comp as MessagePanel).message)
+        }
     }
 }
