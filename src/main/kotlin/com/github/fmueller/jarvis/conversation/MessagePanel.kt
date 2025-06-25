@@ -17,6 +17,7 @@ import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import org.jdesktop.swingx.VerticalLayout
+import org.jetbrains.annotations.VisibleForTesting
 import java.awt.BorderLayout
 import java.awt.Font
 import java.util.regex.Pattern
@@ -71,7 +72,7 @@ class MessagePanel(
 
     private val highlightedCodeHelper = SyntaxHighlightedCodeHelper(project)
 
-    // visibility for testing
+    @VisibleForTesting
     val parsed = mutableListOf<ParsedContent>()
 
     private var reasoningPanel: JPanel? = null
@@ -79,7 +80,7 @@ class MessagePanel(
     private var reasoningContentPanel: JPanel? = null
     private var hasReasoningContent = false
 
-    // visibility for testing
+    @VisibleForTesting
     var reasoningMessagePanel: MessagePanel? = null
 
     private var isReasoningExpanded: Boolean = false
