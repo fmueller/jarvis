@@ -8,7 +8,9 @@ import dev.langchain4j.memory.chat.TokenWindowChatMemory
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
+import java.io.InputStream
 import kotlinx.coroutines.*
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -19,6 +21,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 object OllamaService {
 
@@ -120,6 +123,9 @@ object OllamaService {
         .connectTimeout(Duration.ofSeconds(2))
         .build()
 
+    @Volatile
+    private var currentRequestJob: Job? = null
+
     /**
      * Base URL used for all requests to Ollama.
      */
@@ -146,6 +152,10 @@ object OllamaService {
 
     fun clearChatMemory() {
         assistant = createAiService()
+    }
+
+    fun cancelRequest() {
+        currentRequestJob?.cancel()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -186,21 +196,39 @@ object OllamaService {
 
         val responseInFlight = StringBuilder()
         try {
-            suspendCancellableCoroutine { continuation ->
-                assistant
-                    .chat(nextMessagePrompt)
-                    .onPartialResponse { update ->
-                        responseInFlight.append(update)
-                        conversation.addToMessageBeingGenerated(update)
-                    }
-                    .onCompleteResponse { response -> continuation.resumeWith(Result.success(response.aiMessage().text())) }
-                    .onError { error -> continuation.cancel(Exception(error.message)) }
-                    .start()
+            val json = "{" +
+                "\"model\":\"$modelName\"," +
+                "\"prompt\":${Json.encodeToString(nextMessagePrompt)}," +
+                "\"stream\":true}"
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create("$host/api/generate"))
+                .timeout(Duration.ofMinutes(5))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build()
 
-                continuation.invokeOnCancellation {
-                    // TODO when LangChain4j implemented AbortController, call it here
+            val future = client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
+            currentRequestJob = coroutineContext.job
+            currentRequestJob?.invokeOnCompletion { future.cancel(true) }
+
+            val response = future.awaitCancellable()
+            response.body().bufferedReader().useLines { lines ->
+                for (line in lines) {
+                    if (!coroutineContext.isActive) break
+                    if (line.isBlank()) continue
+                    val obj = Json.parseToJsonElement(line).jsonObject
+                    val text = obj["response"]?.jsonPrimitive?.content
+                    if (text != null) {
+                        responseInFlight.append(text)
+                        conversation.addToMessageBeingGenerated(text)
+                    }
+                    val done = obj["done"]?.jsonPrimitive?.content?.lowercase() == "true"
+                    if (done) {
+                        break
+                    }
                 }
             }
+            responseInFlight.toString()
         } catch (e: Exception) {
             responseInFlight
                 .appendLine()
@@ -210,6 +238,8 @@ object OllamaService {
                 .append("Error: ")
                 .append(e.message)
                 .toString()
+        } finally {
+            currentRequestJob = null
         }
     }
 
@@ -329,4 +359,5 @@ object OllamaService {
             )
             .build()
     }
+
 }

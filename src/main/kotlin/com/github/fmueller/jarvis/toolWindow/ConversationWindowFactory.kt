@@ -8,6 +8,8 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 import com.intellij.util.ui.components.BorderLayoutPanel
+import javax.swing.JButton
+import com.intellij.icons.AllIcons
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -48,16 +50,26 @@ class ConversationWindowFactory : ToolWindowFactory {
 
                         GlobalScope.launch(Dispatchers.EDT) {
                             text = ""
-                            isEnabled = false
 
-                            conversation.chat(Message(Role.USER, message, CodeContextHelper.getCodeContext(toolWindow.project)))
+                            conversation.startChat(
+                                Message(Role.USER, message, CodeContextHelper.getCodeContext(toolWindow.project)),
+                                this
+                            )
 
-                            isEnabled = true
                             requestFocusInWindow()
                         }
                     }
                 }
             })
+        }
+
+        private val stopButton = JButton(AllIcons.Actions.Suspend).apply {
+            toolTipText = "Stop"
+            isVisible = false
+            addActionListener {
+                conversation.cancelChat()
+                conversation.addMessage(Message.info("Request cancelled by user."))
+            }
         }
 
         fun getContent() = BorderLayoutPanel().apply {
@@ -66,8 +78,22 @@ class ConversationWindowFactory : ToolWindowFactory {
                 addToCenter(JPanel(BorderLayout()).apply {
                     border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
                     add(inputArea, BorderLayout.CENTER)
+                    add(stopButton, BorderLayout.EAST)
                 })
             })
+        }
+
+        init {
+            conversation.addPropertyChangeListener {
+                if (it.propertyName == "chatInProgress") {
+                    val inProgress = it.newValue as Boolean
+                    stopButton.isVisible = inProgress
+                    inputArea.isEnabled = !inProgress
+                    if (!inProgress) {
+                        inputArea.requestFocusInWindow()
+                    }
+                }
+            }
         }
     }
 }
