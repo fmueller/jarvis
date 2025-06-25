@@ -12,11 +12,11 @@ import javax.swing.SwingUtilities
 
 class ConversationPanel(conversation: Conversation, private val project: Project) : Disposable {
 
-    private val panel = JPanel().apply {
+    internal val panel = JPanel().apply {
         layout = VerticalLayout(1)
     }
 
-    private var updatePanel: MessagePanel? = null
+    internal var updatePanel: MessagePanel? = null
 
     // we are exposing the scrollable container here and keep it in the panel
     // because we need to adjust the scroll position when new messages are added
@@ -71,7 +71,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         conversation.addMessage(Message.fromAssistant("Hello! How can I help you?"))
     }
 
-    private fun updateMessageInProgress(update: String) {
+    internal fun updateMessageInProgress(update: String) {
         if (updatePanel == null) {
             updatePanel = MessagePanel.create(Message.fromAssistant(update), project)
             Disposer.register(this, updatePanel!!)
@@ -83,7 +83,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         }
     }
 
-    private fun updateSmooth(messages: List<Message>) {
+    internal fun updateSmooth(messages: List<Message>) {
         val currentComponentCount = panel.componentCount
         val existingMessageCount = if (updatePanel != null) currentComponentCount - 1 else currentComponentCount
 
