@@ -7,7 +7,7 @@ import com.github.fmueller.jarvis.conversation.Message
 class ModelCommand(private val modelName: String) : SlashCommand {
 
     override suspend fun run(conversation: Conversation): Conversation {
-        val newModel = if (modelName.equals("default", ignoreCase = true)) "qwen3:4b" else modelName
+        val newModel = if (modelName.equals("default", ignoreCase = true)) OllamaService.DEFAULT_MODEL_NAME else modelName
         OllamaService.modelName = newModel
         conversation.addMessage(Message.info("Model changed to $newModel"))
         return conversation

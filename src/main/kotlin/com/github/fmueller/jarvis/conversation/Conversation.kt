@@ -49,6 +49,7 @@ data class Message(
         )
 
         fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
+        fun fromUser(content: String) = Message(Role.USER, content)
         fun info(content: String) = Message(Role.INFO, content)
     }
 
@@ -92,12 +93,23 @@ data class Message(
 @Service(Service.Level.PROJECT)
 class Conversation : Disposable {
 
+    companion object {
+
+        fun greetingMessage(): Message {
+            return Message.fromAssistant("Hello! How can I help you?")
+        }
+    }
+
     private var _messages = mutableListOf<Message>()
     val messages get() = _messages.toList()
 
     private val _messageBeingGenerated = StringBuilder()
 
     private val propertyChangeSupport = PropertyChangeSupport(this)
+
+    init {
+        addMessage(greetingMessage())
+    }
 
     suspend fun chat(message: Message): Conversation {
         addMessage(message)
@@ -130,7 +142,7 @@ class Conversation : Disposable {
         clearMessageBeingGenerated()
         val oldMessages = ArrayList(_messages)
         _messages.clear()
-        _messages.add(Message.fromAssistant("Hello! How can I help you?"))
+        _messages.add(greetingMessage())
         propertyChangeSupport.firePropertyChange("messages", oldMessages, ArrayList(_messages))
     }
 

@@ -134,7 +134,9 @@ object OllamaService {
         fun chat(message: String): TokenStream
     }
 
-    var modelName: String = "qwen3:4b"
+    const val DEFAULT_MODEL_NAME = "qwen3:1.7b"
+
+    var modelName: String = DEFAULT_MODEL_NAME
         set(value) {
             field = value
             assistant = createAiService()

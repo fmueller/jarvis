@@ -10,15 +10,15 @@ class ModelCommandTest : TestCase() {
 
     override fun setUp() {
         super.setUp()
-        OllamaService.modelName = "qwen3:4b"
+        OllamaService.modelName = OllamaService.DEFAULT_MODEL_NAME
     }
 
     override fun tearDown() {
-        OllamaService.modelName = "qwen3:4b"
+        OllamaService.modelName = OllamaService.DEFAULT_MODEL_NAME
     }
 
     fun `test default model name`() {
-        assertEquals("qwen3:4b", OllamaService.modelName)
+        assertEquals("qwen3:1.7b", OllamaService.modelName)
     }
 
     fun `test run sets arbitrary model name`() = runBlocking {
@@ -35,6 +35,6 @@ class ModelCommandTest : TestCase() {
         ModelCommand("foobar").run(conversation)
         ModelCommand("default").run(conversation)
 
-        assertEquals("qwen3:4b", OllamaService.modelName)
+        assertEquals(OllamaService.DEFAULT_MODEL_NAME, OllamaService.modelName)
     }
 }

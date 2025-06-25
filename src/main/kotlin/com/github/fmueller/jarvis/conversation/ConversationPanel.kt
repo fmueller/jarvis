@@ -12,11 +12,11 @@ import javax.swing.SwingUtilities
 
 class ConversationPanel(conversation: Conversation, private val project: Project) : Disposable {
 
-    private val panel = JPanel().apply {
+    internal val panel = JPanel().apply {
         layout = VerticalLayout(1)
     }
 
-    private var updatePanel: MessagePanel? = null
+    internal var updatePanel: MessagePanel? = null
 
     // we are exposing the scrollable container here and keep it in the panel
     // because we need to adjust the scroll position when new messages are added
@@ -54,7 +54,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
                     if (newMessages == null) {
                         throw IllegalStateException("Property 'messages' must be a list of messages")
                     }
-                    update(newMessages)
+                    updateSmooth(newMessages)
                 }
             }
         }
@@ -68,38 +68,49 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             }
         }
 
-        conversation.addMessage(Message.fromAssistant("Hello! How can I help you?"))
+        updateSmooth(conversation.messages)
     }
 
-    private fun updateMessageInProgress(update: String) {
-        if (update.isNotEmpty()) {
-            if (updatePanel == null) {
-                updatePanel = MessagePanel(Message.fromAssistant(update), project, false)
-                Disposer.register(this, updatePanel!!)
-                panel.add(updatePanel)
-            } else {
-                updatePanel!!.message = Message.fromAssistant(update)
-            }
-        } else if (updatePanel != null) {
-            panel.remove(updatePanel)
-            updatePanel!!.dispose()
-            updatePanel = null
+    internal fun updateMessageInProgress(update: String) {
+        if (updatePanel == null) {
+            updatePanel = MessagePanel.create(Message.fromAssistant(update), project)
+            Disposer.register(this, updatePanel!!)
+            panel.add(updatePanel)
+            panel.revalidate()
+            panel.repaint()
+        } else {
+            updatePanel!!.message = Message.fromAssistant(update)
         }
-
-        panel.revalidate()
-        panel.repaint()
     }
 
-    private fun update(messages: List<Message>) {
-        if (messages.size <= 1) {
-            panel.components.filter { it is Disposable }.map { it as Disposable }.forEach { it.dispose() }
+    internal fun updateSmooth(messages: List<Message>) {
+        val currentComponentCount = panel.componentCount
+        val existingMessageCount = if (updatePanel != null) currentComponentCount - 1 else currentComponentCount
+
+        // Handle the case where messages have been cleared (e.g., new conversation)
+        if (messages.size < existingMessageCount) {
             panel.removeAll()
-        }
+            updatePanel = null
 
-        if (messages.isNotEmpty()) {
-            val messagePanel = MessagePanel(messages.last(), project, false)
-            Disposer.register(this, messagePanel)
-            panel.add(messagePanel)
+            messages.forEach { message ->
+                panel.add(MessagePanel.create(message, project))
+            }
+        } else if (updatePanel != null && messages.size > existingMessageCount) {
+            // Handle the case where we have an updatePanel that should become permanent
+            updatePanel!!.message = messages.last()
+            // Clear the updatePanel reference since it's now a permanent part of the conversation
+            updatePanel = null
+
+            val remainingMessages = messages.drop(currentComponentCount)
+            remainingMessages.forEach { message ->
+                panel.add(MessagePanel.create(message, project))
+            }
+        } else {
+            // Handle normal case where new messages are added
+            val messagesToAdd = messages.drop(existingMessageCount)
+            messagesToAdd.forEach { message ->
+                panel.add(MessagePanel.create(message, project))
+            }
         }
 
         panel.revalidate()
