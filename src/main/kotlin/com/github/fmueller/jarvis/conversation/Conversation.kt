@@ -4,6 +4,9 @@ import com.github.fmueller.jarvis.commands.SlashCommandParser
 import com.intellij.lang.Language
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.time.LocalDateTime
@@ -103,12 +106,38 @@ class Conversation : Disposable {
     private var _messages = mutableListOf<Message>()
     val messages get() = _messages.toList()
 
+    @Volatile
+    private var chatJob: Job? = null
+
     private val _messageBeingGenerated = StringBuilder()
 
     private val propertyChangeSupport = PropertyChangeSupport(this)
 
     init {
         addMessage(greetingMessage())
+    }
+
+    fun isChatInProgress(): Boolean = chatJob?.isActive == true
+
+    fun cancelChat() {
+        chatJob?.cancel()
+    }
+
+    fun startChat(message: Message, scope: CoroutineScope): Job {
+        chatJob?.cancel()
+
+        val job = scope.launch {
+            try {
+                chat(message)
+            } finally {
+                chatJob = null
+                propertyChangeSupport.firePropertyChange("chatInProgress", true, false)
+            }
+        }
+
+        chatJob = job
+        propertyChangeSupport.firePropertyChange("chatInProgress", false, true)
+        return job
     }
 
     suspend fun chat(message: Message): Conversation {

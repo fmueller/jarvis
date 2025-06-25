@@ -35,6 +35,8 @@ Available commands:
 
 When using reasoning models with Ollama, Jarvis shows their internal thoughts in an expandable section at the top of each answer.
 
+To cancel an ongoing request, click the stop button next to the input field.
+
 ## License
 
 This project is licensed under the [MIT](LICENSE).

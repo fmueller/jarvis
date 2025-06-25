@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 - Handle malformed code blocks using two backticks
+- Stop ongoing chat requests with a new stop button
 
 ## [1.7.1] - 2025-06-18
 
