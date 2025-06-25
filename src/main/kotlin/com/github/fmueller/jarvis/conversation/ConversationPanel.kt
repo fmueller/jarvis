@@ -68,7 +68,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             }
         }
 
-        conversation.addMessage(Message.fromAssistant("Hello! How can I help you?"))
+        updateSmooth(conversation.messages)
     }
 
     internal fun updateMessageInProgress(update: String) {
@@ -87,8 +87,16 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         val currentComponentCount = panel.componentCount
         val existingMessageCount = if (updatePanel != null) currentComponentCount - 1 else currentComponentCount
 
-        // Handle the case where we have an updatePanel that should become permanent
-        if (updatePanel != null && messages.size > existingMessageCount) {
+        // Handle the case where messages have been cleared (e.g., new conversation)
+        if (messages.size < existingMessageCount) {
+            panel.removeAll()
+            updatePanel = null
+
+            messages.forEach { message ->
+                panel.add(MessagePanel.create(message, project))
+            }
+        } else if (updatePanel != null && messages.size > existingMessageCount) {
+            // Handle the case where we have an updatePanel that should become permanent
             updatePanel!!.message = messages.last()
             // Clear the updatePanel reference since it's now a permanent part of the conversation
             updatePanel = null
