@@ -14,7 +14,7 @@ class MessagePanelTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        messagePanel = MessagePanel(Message.fromAssistant("Hello, I am Jarvis."), project, false)
+        messagePanel = MessagePanel.createForTesting(Message.fromAssistant("Hello, I am Jarvis."), project)
     }
 
     override fun tearDown() {
@@ -128,7 +128,7 @@ class MessagePanelTest : BasePlatformTestCase() {
     }
 
     fun `test info message label`() {
-        val panel = MessagePanel(Message.info("Downloading"), project, false)
+        val panel = MessagePanel.createForTesting(Message.info("Downloading"), project)
         val label = panel.getComponent(0) as JBLabel
         assertEquals("Info", label.text)
     }

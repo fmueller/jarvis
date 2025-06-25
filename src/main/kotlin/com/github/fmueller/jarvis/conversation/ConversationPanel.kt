@@ -74,7 +74,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     private fun updateMessageInProgress(update: String) {
         if (update.isNotEmpty()) {
             if (updatePanel == null) {
-                updatePanel = MessagePanel(Message.fromAssistant(update), project, false)
+                updatePanel = MessagePanel.create(Message.fromAssistant(update), project, false)
                 Disposer.register(this, updatePanel!!)
                 panel.add(updatePanel)
             } else {
@@ -97,7 +97,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         }
 
         if (messages.isNotEmpty()) {
-            val messagePanel = MessagePanel(messages.last(), project, false)
+            val messagePanel = MessagePanel.create(messages.last(), project, false)
             Disposer.register(this, messagePanel)
             panel.add(messagePanel)
         }

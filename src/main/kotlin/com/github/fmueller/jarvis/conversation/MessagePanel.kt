@@ -25,18 +25,50 @@ import javax.swing.JButton
 import javax.swing.JEditorPane
 import javax.swing.JPanel
 import javax.swing.SwingConstants
+import javax.swing.SwingUtilities
+import javax.swing.Timer
 
 class MessagePanel(
     initialMessage: Message,
     private val project: Project,
-    private val isReasoningPanel: Boolean = false
+    private val isReasoningPanel: Boolean = false,
+    private val isTestMode: Boolean = false
 ) : JPanel(), Disposable {
 
-    private companion object {
+    companion object {
+
+        private const val UPDATE_DELAY_MS = 100
+        private const val MIN_CONTENT_CHANGE = 5
+        private const val MIN_UPDATE_INTERVAL_MS = 50
+
         private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n\\s*```", Pattern.DOTALL)
         private val assistantBgColor = { UIUtil.getPanelBackground() }
         private val userBgColor = { UIUtil.getTextFieldBackground() }
+
+        fun create(
+            initialMessage: Message,
+            project: Project,
+            isReasoningPanel: Boolean = false
+        ): MessagePanel {
+            return MessagePanel(initialMessage, project, isReasoningPanel, false)
+        }
+
+        fun createForTesting(
+            initialMessage: Message,
+            project: Project,
+            isReasoningPanel: Boolean = false
+        ): MessagePanel {
+            return MessagePanel(initialMessage, project, isReasoningPanel, true)
+        }
     }
+
+    private val updateTimer = Timer(UPDATE_DELAY_MS) {
+        performScheduledUpdate()
+    }.apply { isRepeats = false }
+
+    private var pendingMessage: Message? = null
+    private var lastUpdateTime = 0L
+    private var lastRenderedContentLength = 0
 
     sealed interface ParsedContent
     data class Content(val markdown: String) : ParsedContent
@@ -71,38 +103,76 @@ class MessagePanel(
         get() = _message
         set(value) {
             _message = value
-            updatePanel()
+            if (isTestMode) {
+                updatePanel(value)
+            } else {
+                scheduleSmartUpdate(value)
+            }
         }
 
     init {
         resetUI()
-        updatePanel()
+        updatePanel(message)
     }
 
     override fun updateUI() {
         super.updateUI()
         resetUI()
-        updatePanel()
+        updatePanel(message)
     }
 
     override fun dispose() {
+        updateTimer.stop()
         parsed.clear()
         highlightedCodeHelper.disposeAllEditors()
         reasoningMessagePanel?.dispose()
     }
 
+    private fun scheduleSmartUpdate(newMessage: Message) {
+        val now = System.currentTimeMillis()
+        val timeSinceLastUpdate = now - lastUpdateTime
+        val contentLengthDiff = newMessage.content.length - lastRenderedContentLength
+
+        val shouldUpdateImmediately = contentLengthDiff >= MIN_CONTENT_CHANGE * 3 || timeSinceLastUpdate > UPDATE_DELAY_MS * 2
+        if (shouldUpdateImmediately && timeSinceLastUpdate > MIN_UPDATE_INTERVAL_MS) {
+            updateTimer.stop()
+            performActualUpdate(newMessage)
+        } else {
+            // Schedule delayed update
+            pendingMessage = newMessage
+            if (!updateTimer.isRunning) {
+                updateTimer.start()
+            }
+        }
+    }
+
+    private fun performScheduledUpdate() {
+        pendingMessage?.let { msg ->
+            performActualUpdate(msg)
+            pendingMessage = null
+        }
+    }
+
+    private fun performActualUpdate(messageToRender: Message) {
+        lastUpdateTime = System.currentTimeMillis()
+        lastRenderedContentLength = messageToRender.content.length
+        SwingUtilities.invokeLater {
+            updatePanel(messageToRender)
+        }
+    }
+
     @Suppress("SENSELESS_COMPARISON") // message can be null
-    private fun updatePanel() {
-        if (message == null) {
+    private fun updatePanel(messageToUpdate: Message) {
+        if (messageToUpdate == null) {
             return
         }
 
-        val (reasoning, contentList) = parse(message.contentWithClosedTrailingCodeBlock())
+        val (reasoning, contentList) = parse(messageToUpdate.contentWithClosedTrailingCodeBlock())
 
         if (reasoning != null && !isReasoningPanel) {
             reasoningPanel?.isVisible = true
             if (reasoningMessagePanel == null) {
-                reasoningMessagePanel = MessagePanel(Message.fromAssistant(reasoning.markdown), project, true)
+                reasoningMessagePanel = MessagePanel(Message.fromAssistant(reasoning.markdown), project, true, isTestMode)
             } else {
                 reasoningMessagePanel?.message = Message.fromAssistant(reasoning.markdown)
             }
@@ -195,6 +265,7 @@ class MessagePanel(
         }
     }
 
+    @Suppress("SENSELESS_COMPARISON") // message can be null
     private fun resetUI() {
         if (message == null) {
             return
@@ -259,7 +330,7 @@ class MessagePanel(
             outerPanel.add(headerButton, BorderLayout.NORTH)
             outerPanel.add(contentPanel, BorderLayout.CENTER)
 
-            reasoningMessagePanel = MessagePanel(Message.fromAssistant(""), project, true).apply {
+            reasoningMessagePanel = MessagePanel(Message.fromAssistant(""), project, true, isTestMode).apply {
                 background = outerPanel.background
                 border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
             }
