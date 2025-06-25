@@ -231,7 +231,7 @@ class MessagePanel(
                     val newContent = newParsedContent.subList(i, newParsedContent.size)
                     parsed.subList(i, parsed.size).clear()
                     parsed.addAll(newContent)
-                    removeAllComponentsAfter(i + 1)
+                    removeAllComponentsAfter(i)
                     render(newContent)
                     break
                 }
@@ -460,7 +460,16 @@ class MessagePanel(
     }
 
     private fun removeAllComponentsAfter(index: Int) {
-        for (i in componentCount - 1 downTo index) {
+        val fixedComponentsCount = if (isReasoningPanel) 0 else 2 // role label + reasoning panel
+        val actualComponentIndex = fixedComponentsCount + index
+
+        for (i in componentCount - 1 downTo actualComponentIndex) {
+            val component = getComponent(i)
+            // Skip removal of fixed components (reasoning panel and role label)
+            if (!isReasoningPanel && (component == reasoningPanel || component is JBLabel)) {
+                continue
+            }
+
             remove(i)
         }
     }
