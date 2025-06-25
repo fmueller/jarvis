@@ -1,6 +1,5 @@
 package com.github.fmueller.jarvis.conversation
 
-import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.runInEdtAndGet
 
@@ -18,7 +17,7 @@ class ConversationPanelTest : BasePlatformTestCase() {
     }
 
     override fun tearDown() {
-        Disposer.dispose(conversation)
+        conversationPanel.dispose()
         super.tearDown()
     }
 
