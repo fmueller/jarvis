@@ -194,4 +194,113 @@ class MessagePanelTest : BasePlatformTestCase() {
 
         assertEquals("<p>Hello, I am Jarvis.</p>", editorPane.text.trim())
     }
+
+    fun `test first content part is preserved when code content is rendered`() {
+        // Start with a message containing text and then add code
+        messagePanel.message = Message.fromAssistant("Here is the solution:")
+
+        // Verify initial state - should have one content part
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Content)
+        assertEquals("Here is the solution:", (messagePanel.parsed[0] as MessagePanel.Content).markdown)
+
+        // Update to include a code block
+        messagePanel.message = Message.fromAssistant("Here is the solution:\n\n```kotlin\nprintln(\"Hello, World!\")\n```")
+
+        // Verify that both content and code parts are preserved
+        assertEquals(2, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Content)
+        assertTrue(messagePanel.parsed[1] is MessagePanel.Code)
+
+        // Verify the first content part is still there
+        assertEquals("Here is the solution:\n\n", (messagePanel.parsed[0] as MessagePanel.Content).markdown)
+
+        // Verify the code part is correct
+        val codeContent = messagePanel.parsed[1] as MessagePanel.Code
+        assertEquals("kotlin", codeContent.languageId)
+        assertEquals("println(\"Hello, World!\")", codeContent.content)
+
+        // Verify the UI components are present
+        // Should have: role label + reasoning panel + content component + code component
+        val expectedComponentCount = 4
+        assertTrue("Expected at least $expectedComponentCount components, but got ${messagePanel.componentCount}",
+            messagePanel.componentCount >= expectedComponentCount)
+    }
+
+    fun `test content not duplicated when adding code after existing content`() {
+        // Start with content only
+        messagePanel.message = Message.fromAssistant("Here is the solution:")
+
+        // Verify initial state
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Content)
+        assertEquals("Here is the solution:", (messagePanel.parsed[0] as MessagePanel.Content).markdown)
+
+        // Count initial UI components (role label + reasoning panel + content component)
+        val initialComponentCount = messagePanel.componentCount
+
+        // Update to add code block - this should modify the first content and add code
+        messagePanel.message = Message.fromAssistant("Here is the solution:\n\n```kotlin\nprintln(\"Hello, World!\")\n```")
+
+        // Verify parsing is correct
+        assertEquals(2, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Content)
+        assertTrue(messagePanel.parsed[1] is MessagePanel.Code)
+
+        // Verify the first content part was updated, not duplicated
+        assertEquals("Here is the solution:\n\n", (messagePanel.parsed[0] as MessagePanel.Content).markdown)
+
+        // Verify we have exactly one more component (the code block)
+        assertEquals(initialComponentCount + 1, messagePanel.componentCount)
+
+        // Verify no duplicate content by checking that we don't have extra text components
+        var textComponentCount = 0
+        var codeComponentCount = 0
+
+        for (i in 0 until messagePanel.componentCount) {
+            val component = messagePanel.getComponent(i)
+            when {
+                component is JEditorPane -> textComponentCount++
+                component is JBScrollPane && component.viewport.view !is JEditorPane -> codeComponentCount++
+                component is JBLabel -> { /* role label - ignore */ }
+                component is JPanel -> { /* reasoning panel - ignore */ }
+            }
+        }
+
+        // Should have exactly 1 text component and 1 code component
+        assertEquals("Should have exactly 1 text component but found $textComponentCount", 1, textComponentCount)
+        assertEquals("Should have exactly 1 code component but found $codeComponentCount", 1, codeComponentCount)
+    }
+
+    fun `test removeAllComponentsAfter preserves correct components`() {
+        // Set up a message with multiple content parts
+        messagePanel.message = Message.fromAssistant("First part\n\n```kotlin\ncode1\n```\n\nSecond part\n\n```java\ncode2\n```")
+
+        // Verify initial parsing
+        assertEquals(4, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Content) // "First part\n\n"
+        assertTrue(messagePanel.parsed[1] is MessagePanel.Code)    // kotlin code
+        assertTrue(messagePanel.parsed[2] is MessagePanel.Content) // "\n\nSecond part\n\n"
+        assertTrue(messagePanel.parsed[3] is MessagePanel.Code)    // java code
+
+        val initialComponentCount = messagePanel.componentCount
+
+        // Update a message to change the second content part - this should trigger removeAllComponentsAfter(2)
+        messagePanel.message = Message.fromAssistant("First part\n\n```kotlin\ncode1\n```\n\nModified second part")
+
+        // Verify the parsing updated correctly
+        assertEquals(3, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Content) // "First part\n\n"
+        assertTrue(messagePanel.parsed[1] is MessagePanel.Code)    // kotlin code (unchanged)
+        assertTrue(messagePanel.parsed[2] is MessagePanel.Content) // "Modified second part" (changed)
+
+        // Verify the first two parts are preserved
+        assertEquals("First part\n\n", (messagePanel.parsed[0] as MessagePanel.Content).markdown)
+        assertEquals("kotlin", (messagePanel.parsed[1] as MessagePanel.Code).languageId)
+        assertEquals("code1", (messagePanel.parsed[1] as MessagePanel.Code).content)
+        assertEquals("\n\nModified second part", (messagePanel.parsed[2] as MessagePanel.Content).markdown)
+
+        // Should have one less component (removed the second code block)
+        assertEquals(initialComponentCount - 1, messagePanel.componentCount)
+    }
 }
