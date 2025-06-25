@@ -54,7 +54,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
                     if (newMessages == null) {
                         throw IllegalStateException("Property 'messages' must be a list of messages")
                     }
-                    update(newMessages)
+                    updateSmooth(newMessages)
                 }
             }
         }
@@ -72,34 +72,37 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     }
 
     private fun updateMessageInProgress(update: String) {
-        if (update.isNotEmpty()) {
-            if (updatePanel == null) {
-                updatePanel = MessagePanel.create(Message.fromAssistant(update), project, false)
-                Disposer.register(this, updatePanel!!)
-                panel.add(updatePanel)
-            } else {
-                updatePanel!!.message = Message.fromAssistant(update)
-            }
-        } else if (updatePanel != null) {
-            panel.remove(updatePanel)
-            updatePanel!!.dispose()
-            updatePanel = null
+        if (updatePanel == null) {
+            updatePanel = MessagePanel.create(Message.fromAssistant(update), project)
+            Disposer.register(this, updatePanel!!)
+            panel.add(updatePanel)
+            panel.revalidate()
+            panel.repaint()
+        } else {
+            updatePanel!!.message = Message.fromAssistant(update)
         }
-
-        panel.revalidate()
-        panel.repaint()
     }
 
-    private fun update(messages: List<Message>) {
-        if (messages.size <= 1) {
-            panel.components.filter { it is Disposable }.map { it as Disposable }.forEach { it.dispose() }
-            panel.removeAll()
-        }
+    private fun updateSmooth(messages: List<Message>) {
+        val currentComponentCount = panel.componentCount
+        val existingMessageCount = if (updatePanel != null) currentComponentCount - 1 else currentComponentCount
 
-        if (messages.isNotEmpty()) {
-            val messagePanel = MessagePanel.create(messages.last(), project, false)
-            Disposer.register(this, messagePanel)
-            panel.add(messagePanel)
+        // Handle the case where we have an updatePanel that should become permanent
+        if (updatePanel != null && messages.size > existingMessageCount) {
+            updatePanel!!.message = messages.last()
+            // Clear the updatePanel reference since it's now a permanent part of the conversation
+            updatePanel = null
+
+            val remainingMessages = messages.drop(currentComponentCount)
+            remainingMessages.forEach { message ->
+                panel.add(MessagePanel.create(message, project))
+            }
+        } else {
+            // Handle normal case where new messages are added
+            val messagesToAdd = messages.drop(existingMessageCount)
+            messagesToAdd.forEach { message ->
+                panel.add(MessagePanel.create(message, project))
+            }
         }
 
         panel.revalidate()
