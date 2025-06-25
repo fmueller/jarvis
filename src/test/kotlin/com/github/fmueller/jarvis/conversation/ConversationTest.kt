@@ -50,4 +50,34 @@ class ConversationTest : TestCase() {
         assertFalse(called)
         assertEquals(0, pcs.propertyChangeListeners.size)
     }
+
+    fun `test close open code block with two backticks`() {
+        val message = Message.fromAssistant("``kotlin\nprintln(\"Hi\")")
+
+        val closed = message.contentWithClosedTrailingCodeBlock()
+
+        assertTrue(closed.endsWith("```"))
+    }
+
+    fun `test starting delimiter with two backticks is normalized to triple`() {
+        val message = Message.fromAssistant("``kotlin\nprintln(\"Hi\")\n```")
+
+        val normalized = message.contentWithClosedTrailingCodeBlock()
+        assertTrue(normalized.lines().first().trimStart().startsWith("```"))
+    }
+
+    fun `test ending delimiter with two backticks is normalized to triple`() {
+        val message = Message.fromAssistant("```kotlin\nprintln(\"Hi\")\n``")
+
+        val normalized = message.contentWithClosedTrailingCodeBlock()
+        assertTrue(normalized.lines().last().trim() == "```")
+    }
+
+    fun `test content without open code block stays unchanged`() {
+        val message = Message.fromAssistant("Hello")
+
+        val closed = message.contentWithClosedTrailingCodeBlock()
+
+        assertEquals("Hello", closed)
+    }
 }

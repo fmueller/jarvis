@@ -53,18 +53,36 @@ data class Message(
         fun info(content: String) = Message(Role.INFO, content)
     }
 
-    fun contentWithClosedTrailingCodeBlock() =
-        if (isHelpMessage()) content.trim()
-        else closeOpenMarkdownCodeBlockAtTheEndOfContent().trim()
+    fun contentWithClosedTrailingCodeBlock(): String {
+        if (isHelpMessage()) {
+            return content.trim()
+        }
+
+        val normalized = normalizeCodeBlockDelimiters(content)
+        return closeOpenMarkdownCodeBlockAtTheEndOfContent(normalized).trim()
+    }
 
     fun isHelpMessage() = this == HELP_MESSAGE
 
-    private fun closeOpenMarkdownCodeBlockAtTheEndOfContent(): String {
-        val tripleBackticksCount = content.split("```").size - 1
-        return if (tripleBackticksCount % 2 != 0) {
-            "$content\n```"
+    private fun closeOpenMarkdownCodeBlockAtTheEndOfContent(text: String): String {
+        val delimiterPattern = Regex("""^\s*`{2,}""")
+        val delimiterCount = text.lines().count { delimiterPattern.containsMatchIn(it) }
+        return if (delimiterCount % 2 != 0) {
+            "$text\n```"
         } else {
-            content
+            text
+        }
+    }
+
+    private fun normalizeCodeBlockDelimiters(text: String): String {
+        return text.lines().joinToString("\n") { line ->
+            val trimmed = line.trimStart()
+            if (trimmed.startsWith("``") && !trimmed.startsWith("```") && !trimmed.startsWith("````")) {
+                val indent = line.substring(0, line.length - trimmed.length)
+                indent + "```" + trimmed.drop(2)
+            } else {
+                line
+            }
         }
     }
 }

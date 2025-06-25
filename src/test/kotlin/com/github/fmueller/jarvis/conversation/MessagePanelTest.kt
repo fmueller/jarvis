@@ -107,6 +107,41 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("", parsedCode.content)
     }
 
+    fun `test code block starting with two backticks`() {
+        messagePanel.message = Message.fromAssistant("``kotlin\nprintln(\"Hi\")\n```")
+
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
+
+        val parsedCode = messagePanel.parsed[0] as MessagePanel.Code
+        assertEquals("kotlin", parsedCode.languageId)
+        assertEquals("println(\"Hi\")", parsedCode.content)
+        assertTrue(messagePanel.message.contentWithClosedTrailingCodeBlock().lines().first().trimStart().startsWith("```"))
+    }
+
+    fun `test code block ending with two backticks`() {
+        messagePanel.message = Message.fromAssistant("```kotlin\nprintln(\"Hi\")\n``")
+
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
+
+        val parsedCode = messagePanel.parsed[0] as MessagePanel.Code
+        assertEquals("kotlin", parsedCode.languageId)
+        assertEquals("println(\"Hi\")", parsedCode.content)
+        assertTrue(messagePanel.message.contentWithClosedTrailingCodeBlock().lines().last().trim() == "```")
+    }
+
+    fun `test unclosed code block starting with two backticks`() {
+        messagePanel.message = Message.fromAssistant("``kotlin\nprintln(\"Hi\")")
+
+        assertEquals(1, messagePanel.parsed.size)
+        assertTrue(messagePanel.parsed[0] is MessagePanel.Code)
+
+        val parsedCode = messagePanel.parsed[0] as MessagePanel.Code
+        assertEquals("kotlin", parsedCode.languageId)
+        assertEquals("println(\"Hi\")", parsedCode.content)
+    }
+
     fun `test multiple message updates`() {
         messagePanel.message = Message.fromAssistant("Hello World:\n\n")
         messagePanel.message = Message.fromAssistant("Hello World:\n\n```")

@@ -1,6 +1,7 @@
 # Jarvis Changelog
 
 ## [Unreleased]
+- Handle malformed code blocks using two backticks
 
 ## [1.7.1] - 2025-06-18
 

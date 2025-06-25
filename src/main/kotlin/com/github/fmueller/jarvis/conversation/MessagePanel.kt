@@ -36,7 +36,8 @@ class MessagePanel(
         private const val MIN_CONTENT_CHANGE = 5
         private const val MIN_UPDATE_INTERVAL_MS = 50
 
-        private val codeBlockPattern = Pattern.compile("```(\\w+)?\\n(.*?)\\n\\s*```", Pattern.DOTALL)
+        private val codeBlockPattern = Pattern.compile("`{2,}(\\w+)?\\n(.*?)\\n\\s*`{2,}", Pattern.DOTALL)
+
         private val assistantBgColor = { UIUtil.getPanelBackground() }
         private val userBgColor = { UIUtil.getTextFieldBackground() }
 
