@@ -4,6 +4,12 @@ import com.github.fmueller.jarvis.conversation.CodeContext
 import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.Message
 import com.intellij.lang.Language
+import dev.langchain4j.http.client.HttpClient
+import dev.langchain4j.http.client.HttpClientBuilder
+import dev.langchain4j.http.client.HttpRequest
+import dev.langchain4j.http.client.SuccessfulHttpResponse
+import dev.langchain4j.http.client.sse.ServerSentEventListener
+import dev.langchain4j.http.client.sse.ServerSentEventParser
 import dev.langchain4j.memory.chat.TokenWindowChatMemory
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
 import dev.langchain4j.service.AiServices
@@ -13,12 +19,14 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.jetbrains.annotations.VisibleForTesting
+import java.io.IOException
 import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 object OllamaService {
 
@@ -116,7 +124,9 @@ object OllamaService {
                     This approach leverages the `set` data structure to eliminate duplicate items more efficiently than iterating through the list.
                     """.trimIndent()
 
-    private val client = HttpClient.newBuilder()
+    private var currentHttpClient: CancellableHttpClient? = null
+
+    private val client = java.net.http.HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(2))
         .build()
 
@@ -187,19 +197,41 @@ object OllamaService {
         val responseInFlight = StringBuilder()
         try {
             suspendCancellableCoroutine { continuation ->
-                assistant
+                val tokenStream = assistant
                     .chat(nextMessagePrompt)
                     .onPartialResponse { update ->
+                        if (continuation.context.job.isCancelled) {
+                            cancelCurrentRequest()
+                            return@onPartialResponse
+                        }
                         responseInFlight.append(update)
                         conversation.addToMessageBeingGenerated(update)
                     }
-                    .onCompleteResponse { response -> continuation.resumeWith(Result.success(response.aiMessage().text())) }
-                    .onError { error -> continuation.cancel(Exception(error.message)) }
-                    .start()
+                    .onCompleteResponse { response ->
+                        if (!continuation.context.job.isCancelled) {
+                            continuation.resumeWith(Result.success(response.aiMessage().text()))
+                        } else {
+                            cancelCurrentRequest()
+                        }
+                    }
+                    .onError { error ->
+                        cancelCurrentRequest()
+                        continuation.cancel(Exception(error.message))
+                    }
 
                 continuation.invokeOnCancellation {
-                    // TODO when LangChain4j implemented AbortController, call it here
+                    cancelCurrentRequest()
+                    runCatching {
+                        if (responseInFlight.isNotEmpty()) {
+                            responseInFlight
+                                .appendLine()
+                                .appendLine()
+                                .appendLine("*Request cancelled by user.*")
+                        }
+                    }
                 }
+
+                tokenStream.start()
             }
         } catch (e: Exception) {
             responseInFlight
@@ -228,12 +260,12 @@ object OllamaService {
 
     fun isAvailable(): Boolean {
         return try {
-            val request = HttpRequest.newBuilder()
+            val request = java.net.http.HttpRequest.newBuilder()
                 .uri(URI.create(host))
                 .timeout(Duration.ofSeconds(2))
                 .build()
 
-            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
             response.statusCode() == 200
         } catch (e: Exception) {
             false
@@ -243,12 +275,12 @@ object OllamaService {
     @VisibleForTesting
     fun isModelAvailable(): Boolean {
         return try {
-            val request = HttpRequest.newBuilder()
+            val request = java.net.http.HttpRequest.newBuilder()
                 .uri(URI.create("$host/api/tags"))
                 .timeout(Duration.ofSeconds(2))
                 .build()
 
-            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
             if (response.statusCode() != 200) return false
             val json = Json.parseToJsonElement(response.body())
             val models = json.jsonObject["models"]?.jsonArray ?: return false
@@ -263,14 +295,14 @@ object OllamaService {
 
     private fun pullModel(): String? {
         return try {
-            val request = HttpRequest.newBuilder()
+            val request = java.net.http.HttpRequest.newBuilder()
                 .uri(URI.create("$host/api/pull"))
                 .timeout(Duration.ofSeconds(2))
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
+                .POST(java.net.http.HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
                 .build()
 
-            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            val response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
             val body = response.body()
             val error = body.lineSequence()
                 .mapNotNull { runCatching {
@@ -312,10 +344,13 @@ object OllamaService {
     }
 
     private fun createAiService(): Assistant {
+        cancelCurrentRequest()
+        currentHttpClient = CancellableHttpClient()
         return AiServices
             .builder(Assistant::class.java)
             .streamingChatModel(
                 OllamaStreamingChatModel.builder()
+                    .httpClientBuilder(currentHttpClient!!.getHttpClientBuilder())
                     .timeout(Duration.ofMinutes(5))
                     .baseUrl(host)
                     .modelName(modelName)
@@ -328,5 +363,164 @@ object OllamaService {
                     .build()
             )
             .build()
+    }
+
+    private fun cancelCurrentRequest() {
+        currentHttpClient?.cancel()
+    }
+
+    /**
+    * Wrapper for HttpClient that can be canceled
+    */
+    private class CancellableHttpClient {
+
+        @Volatile
+        private var currentCall: Call? = null
+
+        fun getHttpClientBuilder(): HttpClientBuilder {
+            return OkHttpClientBuilder(this)
+        }
+
+        fun setCurrentCall(call: Call) {
+            currentCall?.cancel()
+            currentCall = call
+        }
+
+        fun cancel() {
+            currentCall?.cancel()
+            currentCall = null
+        }
+    }
+
+    private class OkHttpClientBuilder(private val cancellableHttpClient: CancellableHttpClient) : HttpClientBuilder {
+
+        private var connectTimeout: Duration = Duration.ofSeconds(30)
+        private var readTimeout: Duration = Duration.ofSeconds(5)
+
+        override fun connectTimeout(): Duration = connectTimeout
+
+        override fun connectTimeout(timeout: Duration?): HttpClientBuilder {
+            timeout?.let { this.connectTimeout = it }
+            return this
+        }
+
+        override fun readTimeout(): Duration = readTimeout
+
+        override fun readTimeout(timeout: Duration?): HttpClientBuilder {
+            timeout?.let { this.readTimeout = it }
+            return this
+        }
+
+        override fun build(): HttpClient? {
+            val okHttpClient = OkHttpClient.Builder()
+                .connectTimeout(connectTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                .readTimeout(readTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                .writeTimeout(readTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                .build()
+
+            return OkHttpClientAdapter(okHttpClient, cancellableHttpClient)
+        }
+    }
+
+    private class OkHttpClientAdapter(
+        private val okHttpClient: OkHttpClient,
+        private val cancellableHttpClient: CancellableHttpClient
+    ) : HttpClient {
+
+        override fun execute(request: HttpRequest): SuccessfulHttpResponse {
+            val call = okHttpClient.newCall(convertToOkHttpRequest(request))
+            cancellableHttpClient.setCurrentCall(call)
+
+            return try {
+                val response = call.execute()
+                convertToLangChain4jResponse(response)
+            } catch (e: IOException) {
+                throw RuntimeException("HTTP request failed", e)
+            }
+        }
+
+        override fun execute(
+            request: HttpRequest?,
+            parser: ServerSentEventParser?,
+            listener: ServerSentEventListener?
+        ) {
+            if (request == null || parser == null || listener == null) {
+                throw IllegalArgumentException("Request, parser, and listener cannot be null")
+            }
+
+            val call = okHttpClient.newCall(convertToOkHttpRequest(request))
+            cancellableHttpClient.setCurrentCall(call)
+
+            try {
+                call.enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        listener.onError(RuntimeException("SSE request failed", e))
+                    }
+
+                    override fun onResponse(call: Call, response: Response) {
+                        if (!response.isSuccessful) {
+                            listener.onError(RuntimeException("SSE request failed with status: ${response.code}"))
+                            return
+                        }
+
+                        response.body?.let { responseBody ->
+                            try {
+                                responseBody.byteStream().use { inputStream ->
+                                    // The parser will read from the InputStream and call the listener methods directly
+                                    parser.parse(inputStream, listener)
+                                }
+                            } catch (e: Exception) {
+                                if (!call.isCanceled()) {
+                                    listener.onError(RuntimeException("Error reading SSE stream", e))
+                                }
+                            }
+                        } ?: run {
+                            listener.onError(RuntimeException("No response body received"))
+                        }
+                    }
+                })
+            } catch (e: Exception) {
+                listener.onError(RuntimeException("Failed to execute SSE request", e))
+            }
+        }
+
+        private fun convertToOkHttpRequest(request: HttpRequest): Request {
+            val builder = Request.Builder().url(request.url())
+            request.headers().forEach { (name, values) ->
+                values.forEach { value ->
+                    builder.addHeader(name, value)
+                }
+            }
+
+            when (request.method()) {
+                dev.langchain4j.http.client.HttpMethod.GET -> builder.get()
+                dev.langchain4j.http.client.HttpMethod.POST -> {
+                    val body = request.body()?.let { bodyContent ->
+                        val contentType = request.headers()["Content-Type"]?.firstOrNull()
+                            ?: "application/json"
+                        bodyContent.toRequestBody(contentType.toMediaType())
+                    } ?: "".toRequestBody()
+                    builder.post(body)
+                }
+                dev.langchain4j.http.client.HttpMethod.DELETE -> builder.delete()
+                else -> throw IllegalArgumentException("Unsupported HTTP method: ${request.method()}")
+            }
+
+            return builder.build()
+        }
+
+        private fun convertToLangChain4jResponse(response: Response): SuccessfulHttpResponse {
+            val body = response.body?.string() ?: ""
+            val headers = mutableMapOf<String, List<String>>()
+            response.headers.forEach { (name, value) ->
+                headers[name] = headers.getOrDefault(name, emptyList()) + value
+            }
+
+            return SuccessfulHttpResponse.builder()
+                .statusCode(response.code)
+                .headers(headers)
+                .body(body)
+                .build()
+        }
     }
 }
