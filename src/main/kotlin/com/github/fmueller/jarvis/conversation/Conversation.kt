@@ -4,9 +4,16 @@ import com.github.fmueller.jarvis.commands.SlashCommandParser
 import com.intellij.lang.Language
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.time.LocalDateTime
+import kotlin.coroutines.coroutineContext
 
 enum class Role {
 
@@ -101,7 +108,17 @@ class Conversation : Disposable {
     }
 
     private var _messages = mutableListOf<Message>()
+    private var currentChatJob: Job? = null
+
     val messages get() = _messages.toList()
+
+    private val _isChatInProgress = MutableStateFlow(false)
+    val isChatInProgress: StateFlow<Boolean> = _isChatInProgress.asStateFlow()
+
+    fun cancelCurrentChat() {
+        currentChatJob?.cancel()
+        currentChatJob = null
+    }
 
     private val _messageBeingGenerated = StringBuilder()
 
@@ -110,10 +127,52 @@ class Conversation : Disposable {
     init {
         addMessage(greetingMessage())
     }
+/*
+    suspend fun chat(message: Message): Conversation {
+        _isChatInProgress.value = true
+        try {
+            currentChatJob?.cancel()
+
+            val conversation = this
+            currentChatJob = coroutineScope {
+                launch {
+                    try {
+                        addMessage(message)
+                        SlashCommandParser.parse(message.content).run(conversation)
+                    } finally {
+                        currentChatJob = null
+                    }
+                }
+            }
+            return this
+        } finally {
+            _isChatInProgress.value = false
+        }
+    }
+*/
 
     suspend fun chat(message: Message): Conversation {
-        addMessage(message)
-        return SlashCommandParser.parse(message.content).run(this)
+        _isChatInProgress.value = true
+        try {
+            currentChatJob?.cancel()
+            currentChatJob = null
+
+            addMessage(message)
+
+            currentChatJob = CoroutineScope(coroutineContext).launch {
+                try {
+                    SlashCommandParser.parse(message.content).run(this@Conversation)
+                } finally {
+                    _isChatInProgress.value = false
+                    currentChatJob = null
+                }
+            }
+
+            return this
+        } catch (e: Exception) {
+            _isChatInProgress.value = false
+            throw e
+        }
     }
 
     fun getLastUserMessage(): Message? = _messages.lastOrNull { it.role == Role.USER }
