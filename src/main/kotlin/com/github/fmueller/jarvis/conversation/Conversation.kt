@@ -127,29 +127,6 @@ class Conversation : Disposable {
     init {
         addMessage(greetingMessage())
     }
-/*
-    suspend fun chat(message: Message): Conversation {
-        _isChatInProgress.value = true
-        try {
-            currentChatJob?.cancel()
-
-            val conversation = this
-            currentChatJob = coroutineScope {
-                launch {
-                    try {
-                        addMessage(message)
-                        SlashCommandParser.parse(message.content).run(conversation)
-                    } finally {
-                        currentChatJob = null
-                    }
-                }
-            }
-            return this
-        } finally {
-            _isChatInProgress.value = false
-        }
-    }
-*/
 
     suspend fun chat(message: Message): Conversation {
         _isChatInProgress.value = true
