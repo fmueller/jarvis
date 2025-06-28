@@ -1,5 +1,6 @@
 package com.github.fmueller.jarvis.ai
 
+import com.github.fmueller.jarvis.ai.http.CancellableHttpClient
 import com.github.fmueller.jarvis.conversation.CodeContext
 import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.Message
@@ -15,7 +16,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.annotations.VisibleForTesting
 import java.net.URI
-import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
@@ -116,7 +116,9 @@ object OllamaService {
                     This approach leverages the `set` data structure to eliminate duplicate items more efficiently than iterating through the list.
                     """.trimIndent()
 
-    private val client = HttpClient.newBuilder()
+    private var currentHttpClient: CancellableHttpClient? = null
+
+    private val client = java.net.http.HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(2))
         .build()
 
@@ -187,19 +189,41 @@ object OllamaService {
         val responseInFlight = StringBuilder()
         try {
             suspendCancellableCoroutine { continuation ->
-                assistant
+                val tokenStream = assistant
                     .chat(nextMessagePrompt)
                     .onPartialResponse { update ->
+                        if (continuation.context.job.isCancelled) {
+                            cancelCurrentRequest()
+                            return@onPartialResponse
+                        }
                         responseInFlight.append(update)
                         conversation.addToMessageBeingGenerated(update)
                     }
-                    .onCompleteResponse { response -> continuation.resumeWith(Result.success(response.aiMessage().text())) }
-                    .onError { error -> continuation.cancel(Exception(error.message)) }
-                    .start()
+                    .onCompleteResponse { response ->
+                        if (!continuation.context.job.isCancelled) {
+                            continuation.resumeWith(Result.success(response.aiMessage().text()))
+                        } else {
+                            cancelCurrentRequest()
+                        }
+                    }
+                    .onError { error ->
+                        cancelCurrentRequest()
+                        continuation.cancel(Exception(error.message))
+                    }
 
                 continuation.invokeOnCancellation {
-                    // TODO when LangChain4j implemented AbortController, call it here
+                    cancelCurrentRequest()
+                    runCatching {
+                        if (responseInFlight.isNotEmpty()) {
+                            responseInFlight
+                                .appendLine()
+                                .appendLine()
+                                .appendLine("*Request cancelled by user.*")
+                        }
+                    }
                 }
+
+                tokenStream.start()
             }
         } catch (e: Exception) {
             responseInFlight
@@ -289,7 +313,9 @@ object OllamaService {
     }
 
     private suspend fun ensureModelAvailable(conversation: Conversation): Boolean {
-        if (isModelAvailable()) return true
+        if (isModelAvailable()) {
+            return true
+        }
 
         conversation.addMessage(Message.info("Downloading model..."))
         val pullError = pullModel()
@@ -312,10 +338,13 @@ object OllamaService {
     }
 
     private fun createAiService(): Assistant {
+        cancelCurrentRequest()
+        currentHttpClient = CancellableHttpClient()
         return AiServices
             .builder(Assistant::class.java)
             .streamingChatModel(
                 OllamaStreamingChatModel.builder()
+                    .httpClientBuilder(currentHttpClient!!.getHttpClientBuilder())
                     .timeout(Duration.ofMinutes(5))
                     .baseUrl(host)
                     .modelName(modelName)
@@ -328,5 +357,9 @@ object OllamaService {
                     .build()
             )
             .build()
+    }
+
+    private fun cancelCurrentRequest() {
+        currentHttpClient?.cancel()
     }
 }

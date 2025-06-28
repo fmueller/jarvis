@@ -8,10 +8,7 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 import com.intellij.util.ui.components.BorderLayoutPanel
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.awt.BorderLayout
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -28,13 +25,20 @@ class ConversationWindowFactory : ToolWindowFactory {
 
     override fun shouldBeAvailable(project: Project) = true
 
+    @OptIn(DelicateCoroutinesApi::class)
     class ConversationWindow(toolWindow: ToolWindow) {
 
         private val conversation = toolWindow.project.service<Conversation>()
         private val conversationPanel = ConversationPanel(conversation, toolWindow.project)
 
-        @OptIn(DelicateCoroutinesApi::class)
-        private val inputArea = InputArea().apply {
+        private val stopButton: StopButton = StopButton {
+            conversation.cancelCurrentChat()
+            inputArea.isEnabled = true
+            stopButton.updateVisibility(false)
+            inputArea.requestFocusInWindow()
+        }
+
+        private val inputArea: InputArea = InputArea().apply {
             placeholderText = "Ask Jarvis a question or type /? for help"
 
             addKeyListener(object : KeyAdapter() {
@@ -49,15 +53,24 @@ class ConversationWindowFactory : ToolWindowFactory {
                         GlobalScope.launch(Dispatchers.EDT) {
                             text = ""
                             isEnabled = false
-
+                            stopButton.updateVisibility(true)
                             conversation.chat(Message(Role.USER, message, CodeContextHelper.getCodeContext(toolWindow.project)))
-
-                            isEnabled = true
-                            requestFocusInWindow()
                         }
                     }
                 }
             })
+        }
+
+        init {
+            GlobalScope.launch(Dispatchers.EDT) {
+                conversation.isChatInProgress.collect { isInProgress ->
+                    inputArea.isEnabled = !isInProgress
+                    stopButton.updateVisibility(isInProgress)
+                    if (!isInProgress) {
+                        inputArea.requestFocusInWindow()
+                    }
+                }
+            }
         }
 
         fun getContent() = BorderLayoutPanel().apply {
@@ -66,6 +79,11 @@ class ConversationWindowFactory : ToolWindowFactory {
                 addToCenter(JPanel(BorderLayout()).apply {
                     border = BorderFactory.createEmptyBorder(10, 10, 10, 10)
                     add(inputArea, BorderLayout.CENTER)
+
+                    add(JPanel(BorderLayout()).apply {
+                        add(stopButton, BorderLayout.EAST)
+                        stopButton.updateVisibility(false)
+                    }, BorderLayout.EAST)
                 })
             })
         }
