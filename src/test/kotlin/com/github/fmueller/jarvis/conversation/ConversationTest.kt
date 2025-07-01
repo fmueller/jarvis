@@ -80,4 +80,20 @@ class ConversationTest : TestCase() {
 
         assertEquals("Hello", closed)
     }
+
+    fun `test clearMessageBeingGenerated fires correct property changes`() {
+        val events = mutableListOf<Pair<String, String>>()
+        conversation.addPropertyChangeListener(PropertyChangeListener { evt ->
+            if (evt.propertyName == "messageBeingGenerated") {
+                events.add(evt.oldValue as String to evt.newValue as String)
+            }
+        })
+
+        conversation.addToMessageBeingGenerated("hello")
+        conversation.addMessage(Message.fromAssistant("test"))
+
+        assertEquals(2, events.size)
+        assertEquals("" to "hello", events[0])
+        assertEquals("hello" to "", events[1])
+    }
 }

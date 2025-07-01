@@ -33,6 +33,7 @@ class ConversationWindowFactory : ToolWindowFactory {
 
         private val stopButton: StopButton = StopButton {
             conversation.cancelCurrentChat()
+            conversation.addMessage(Message.info("Response generation was cancelled"))
             inputArea.isEnabled = true
             stopButton.isVisible = false
             inputArea.requestFocusInWindow()

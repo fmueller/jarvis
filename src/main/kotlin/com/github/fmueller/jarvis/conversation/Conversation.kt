@@ -118,6 +118,7 @@ class Conversation : Disposable {
     fun cancelCurrentChat() {
         currentChatJob?.cancel()
         currentChatJob = null
+        clearMessageBeingGenerated()
     }
 
     private val _messageBeingGenerated = StringBuilder()
