@@ -192,19 +192,11 @@ object OllamaService {
                 val tokenStream = assistant
                     .chat(nextMessagePrompt)
                     .onPartialResponse { update ->
-                        if (continuation.context.job.isCancelled) {
-                            cancelCurrentRequest()
-                            return@onPartialResponse
-                        }
                         responseInFlight.append(update)
                         conversation.addToMessageBeingGenerated(update)
                     }
                     .onCompleteResponse { response ->
-                        if (!continuation.context.job.isCancelled) {
-                            continuation.resumeWith(Result.success(response.aiMessage().text()))
-                        } else {
-                            cancelCurrentRequest()
-                        }
+                        continuation.resumeWith(Result.success(response.aiMessage().text()))
                     }
                     .onError { error ->
                         cancelCurrentRequest()
@@ -214,12 +206,13 @@ object OllamaService {
                 continuation.invokeOnCancellation {
                     cancelCurrentRequest()
                     runCatching {
-                        if (responseInFlight.isNotEmpty()) {
-                            responseInFlight
-                                .appendLine()
-                                .appendLine()
-                                .appendLine("*Request cancelled by user.*")
-                        }
+                        val cancellationMessage = StringBuilder()
+                            .appendLine()
+                            .appendLine()
+                            .append("*Request cancelled by user.*")
+                            .toString()
+                        responseInFlight.append(cancellationMessage)
+                        conversation.addToMessageBeingGenerated(cancellationMessage)
                     }
                 }
 
