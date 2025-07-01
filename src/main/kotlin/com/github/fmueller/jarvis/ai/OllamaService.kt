@@ -116,7 +116,7 @@ object OllamaService {
                     This approach leverages the `set` data structure to eliminate duplicate items more efficiently than iterating through the list.
                     """.trimIndent()
 
-    private var currentHttpClient: CancellableHttpClient? = null
+    private var currentInferenceClient: CancellableHttpClient? = null
 
     private val client = java.net.http.HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(2))
@@ -323,12 +323,12 @@ object OllamaService {
 
     private fun createAiService(): Assistant {
         cancelCurrentRequest()
-        currentHttpClient = CancellableHttpClient()
+        currentInferenceClient = CancellableHttpClient()
         return AiServices
             .builder(Assistant::class.java)
             .streamingChatModel(
                 OllamaStreamingChatModel.builder()
-                    .httpClientBuilder(currentHttpClient!!.getHttpClientBuilder())
+                    .httpClientBuilder(currentInferenceClient!!.getHttpClientBuilder())
                     .timeout(Duration.ofMinutes(5))
                     .baseUrl(host)
                     .modelName(modelName)
@@ -344,6 +344,6 @@ object OllamaService {
     }
 
     private fun cancelCurrentRequest() {
-        currentHttpClient?.cancel()
+        currentInferenceClient?.cancel()
     }
 }
