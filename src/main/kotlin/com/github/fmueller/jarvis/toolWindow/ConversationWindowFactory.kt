@@ -34,7 +34,7 @@ class ConversationWindowFactory : ToolWindowFactory {
         private val stopButton: StopButton = StopButton {
             conversation.cancelCurrentChat()
             inputArea.isEnabled = true
-            stopButton.updateVisibility(false)
+            stopButton.isVisible = false
             inputArea.requestFocusInWindow()
         }
 
@@ -53,7 +53,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                         GlobalScope.launch(Dispatchers.EDT) {
                             text = ""
                             isEnabled = false
-                            stopButton.updateVisibility(true)
+                            stopButton.isVisible = true
                             conversation.chat(Message(Role.USER, message, CodeContextHelper.getCodeContext(toolWindow.project)))
                         }
                     }
@@ -65,7 +65,7 @@ class ConversationWindowFactory : ToolWindowFactory {
             GlobalScope.launch(Dispatchers.EDT) {
                 conversation.isChatInProgress.collect { isInProgress ->
                     inputArea.isEnabled = !isInProgress
-                    stopButton.updateVisibility(isInProgress)
+                    stopButton.isVisible = isInProgress
                     if (!isInProgress) {
                         inputArea.requestFocusInWindow()
                     }
@@ -82,7 +82,7 @@ class ConversationWindowFactory : ToolWindowFactory {
 
                     add(JPanel(BorderLayout()).apply {
                         add(stopButton, BorderLayout.EAST)
-                        stopButton.updateVisibility(false)
+                        stopButton.isVisible = false
                     }, BorderLayout.EAST)
                 })
             })
