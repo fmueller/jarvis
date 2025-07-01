@@ -14,14 +14,10 @@ class StopButton(private val onStop: () -> Unit) : JButton() {
         border = JBUI.Borders.empty(4)
         isContentAreaFilled = false
         isFocusPainted = false
+        isEnabled = true
 
         addActionListener {
             onStop()
         }
-    }
-
-    fun updateVisibility(visible: Boolean) {
-        isVisible = visible
-        isEnabled = visible
     }
 }
