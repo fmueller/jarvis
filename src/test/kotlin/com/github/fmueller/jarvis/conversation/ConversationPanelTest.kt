@@ -197,4 +197,20 @@ class ConversationPanelTest : BasePlatformTestCase() {
                 fewerMessages[0], (comp as MessagePanel).message)
         }
     }
+
+    fun `test updateMessageInProgress with empty update removes existing panel`() {
+        runInEdtAndGet {
+            conversationPanel.updateMessageInProgress("Temporary")
+        }
+        assertNotNull("updatePanel should be non-null after initial update", conversationPanel.updatePanel)
+        val initialCount = runInEdtAndGet { conversationPanel.panel.componentCount }
+
+        runInEdtAndGet {
+            conversationPanel.updateMessageInProgress("")
+        }
+
+        assertNull("updatePanel should be null after empty update", conversationPanel.updatePanel)
+        val newCount = runInEdtAndGet { conversationPanel.panel.componentCount }
+        assertTrue("Panel should have fewer components after removing the update panel", newCount < initialCount)
+    }
 }

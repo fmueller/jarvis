@@ -72,6 +72,17 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     }
 
     internal fun updateMessageInProgress(update: String) {
+        if (update.isEmpty()) {
+            updatePanel?.let {
+                panel.remove(it)
+                Disposer.dispose(it)
+                updatePanel = null
+                panel.revalidate()
+                panel.repaint()
+            }
+            return
+        }
+
         if (updatePanel == null) {
             updatePanel = MessagePanel.create(Message.fromAssistant(update), project)
             Disposer.register(this, updatePanel!!)
