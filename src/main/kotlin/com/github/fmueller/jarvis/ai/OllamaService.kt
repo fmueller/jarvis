@@ -205,15 +205,6 @@ object OllamaService {
 
                 continuation.invokeOnCancellation {
                     cancelCurrentRequest()
-                    runCatching {
-                        val cancellationMessage = StringBuilder()
-                            .appendLine()
-                            .appendLine()
-                            .append("*Request cancelled by user.*")
-                            .toString()
-                        responseInFlight.append(cancellationMessage)
-                        conversation.addToMessageBeingGenerated(cancellationMessage)
-                    }
                 }
 
                 tokenStream.start()
