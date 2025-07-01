@@ -26,18 +26,21 @@ class ConversationWindowFactory : ToolWindowFactory {
     override fun shouldBeAvailable(project: Project) = true
 
     @OptIn(DelicateCoroutinesApi::class)
-    class ConversationWindow(toolWindow: ToolWindow) {
+    class ConversationWindow(private val toolWindow: ToolWindow) {
 
         private val conversation = toolWindow.project.service<Conversation>()
         private val conversationPanel = ConversationPanel(conversation, toolWindow.project)
 
-        private val stopButton: StopButton = StopButton {
-            conversation.cancelCurrentChat()
-            conversation.addMessage(Message.info("Response generation was cancelled"))
-            inputArea.isEnabled = true
-            stopButton.isVisible = false
-            inputArea.requestFocusInWindow()
-        }
+        private val sendButton: SendButton = SendButton(
+            onSend = { sendMessage() },
+            onStop = {
+                conversation.cancelCurrentChat()
+                conversation.addMessage(Message.info("Response generation was cancelled"))
+                inputArea.isEnabled = true
+                sendButton.setSending(false)
+                inputArea.requestFocusInWindow()
+            }
+        )
 
         private val inputArea: InputArea = InputArea().apply {
             placeholderText = "Ask Jarvis a question or type /? for help"
@@ -46,27 +49,37 @@ class ConversationWindowFactory : ToolWindowFactory {
 
                 override fun keyReleased(e: KeyEvent) {
                     if (e.keyCode == KeyEvent.VK_ENTER && !e.isShiftDown) {
-                        val message = text.trim()
-                        if (message.isEmpty()) {
-                            return
-                        }
-
-                        GlobalScope.launch(Dispatchers.EDT) {
-                            text = ""
-                            isEnabled = false
-                            stopButton.isVisible = true
-                            conversation.chat(Message(Role.USER, message, CodeContextHelper.getCodeContext(toolWindow.project)))
-                        }
+                        sendMessage()
                     }
                 }
             })
+        }
+
+        private fun sendMessage() {
+            val message = inputArea.text.trim()
+            if (message.isEmpty()) {
+                return
+            }
+
+            GlobalScope.launch(Dispatchers.EDT) {
+                inputArea.text = ""
+                inputArea.isEnabled = false
+                sendButton.setSending(true)
+                conversation.chat(
+                    Message(
+                        Role.USER,
+                        message,
+                        CodeContextHelper.getCodeContext(toolWindow.project)
+                    )
+                )
+            }
         }
 
         init {
             GlobalScope.launch(Dispatchers.EDT) {
                 conversation.isChatInProgress.collect { isInProgress ->
                     inputArea.isEnabled = !isInProgress
-                    stopButton.isVisible = isInProgress
+                    sendButton.setSending(isInProgress)
                     if (!isInProgress) {
                         inputArea.requestFocusInWindow()
                     }
@@ -82,8 +95,7 @@ class ConversationWindowFactory : ToolWindowFactory {
                     add(inputArea, BorderLayout.CENTER)
 
                     add(JPanel(BorderLayout()).apply {
-                        add(stopButton, BorderLayout.EAST)
-                        stopButton.isVisible = false
+                        add(sendButton, BorderLayout.EAST)
                     }, BorderLayout.EAST)
                 })
             })

@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 - Handle malformed code blocks using two backticks
+- Send button replaces stop button, shows a run icon and switches to a stop icon while a response is generated
 
 ## [1.7.1] - 2025-06-18
 
