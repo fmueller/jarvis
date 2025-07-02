@@ -64,7 +64,9 @@ class ConversationWindowFactory : ToolWindowFactory {
             addKeyListener(object : KeyAdapter() {
 
                 override fun keyReleased(e: KeyEvent) {
-                    if (e.keyCode == KeyEvent.VK_ENTER && !e.isShiftDown) sendMessage()
+                    if (e.keyCode == KeyEvent.VK_ENTER && !e.isShiftDown) {
+                        sendMessage()
+                    }
                 }
             })
         }
