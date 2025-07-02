@@ -196,9 +196,20 @@ object OllamaService {
                         conversation.addToMessageBeingGenerated(update)
                     }
                     .onCompleteResponse { response ->
-                        continuation.resumeWith(Result.success(response.aiMessage().text()))
+                        continuation.resumeWith(Result.success(response.aiMessage().text().trim()))
                     }
                     .onError { error ->
+                        if (!continuation.isCancelled) {
+                            val errorMessage = StringBuilder()
+                                .appendLine()
+                                .appendLine()
+                                .appendLine("An error occurred while processing the message.")
+                                .appendLine()
+                                .append("Error: ")
+                                .append(error.message ?: "Unknown error")
+                                .toString()
+                            conversation.addToMessageBeingGenerated(errorMessage)
+                        }
                         cancelCurrentRequest()
                         continuation.cancel(Exception(error.message))
                     }
@@ -210,7 +221,7 @@ object OllamaService {
                 tokenStream.start()
             }
         } catch (e: Exception) {
-            responseInFlight
+            val errorMessage = StringBuilder()
                 .appendLine()
                 .appendLine()
                 .appendLine("An error occurred while processing the message.")
@@ -218,6 +229,13 @@ object OllamaService {
                 .append("Error: ")
                 .append(e.message)
                 .toString()
+
+            val job = currentCoroutineContext()[Job]
+            if (job?.isCancelled == false) {
+                conversation.addToMessageBeingGenerated(errorMessage)
+            }
+
+            responseInFlight.append(errorMessage).toString().trim()
         }
     }
 
