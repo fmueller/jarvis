@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.jetbrains.annotations.VisibleForTesting
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.time.LocalDateTime
@@ -161,6 +162,15 @@ class Conversation : Disposable {
                 !it.content.startsWith("/model ") &&
                 !it.content.startsWith("/host ")
         } == 1
+
+    /**
+     * Sets the chat in progress state for testing purposes.
+     */
+    @VisibleForTesting
+    internal fun markChatInProgressForTesting(inProgress: Boolean) {
+        _isChatInProgress.value = inProgress
+        currentChatJob = if (inProgress) Job() else null
+    }
 
     fun addToMessageBeingGenerated(text: String) {
         val old = _messageBeingGenerated.toString()

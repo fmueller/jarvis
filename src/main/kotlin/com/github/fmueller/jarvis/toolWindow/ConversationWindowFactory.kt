@@ -16,6 +16,7 @@ import com.intellij.ui.content.ContentFactory
 import com.intellij.util.io.await
 import com.intellij.util.ui.components.BorderLayoutPanel
 import kotlinx.coroutines.*
+import org.jetbrains.annotations.VisibleForTesting
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import java.awt.BorderLayout
@@ -27,7 +28,7 @@ import javax.swing.JPanel
 class ConversationWindowFactory : ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val conversationWindow = ConversationWindow(toolWindow)
+        val conversationWindow = ConversationWindow(toolWindow.project)
         val content = ContentFactory.getInstance().createContent(conversationWindow.getContent(), null, false)
         toolWindow.contentManager.addContent(content)
     }
@@ -35,30 +36,36 @@ class ConversationWindowFactory : ToolWindowFactory {
     override fun shouldBeAvailable(project: Project) = true
 
     @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
-    class ConversationWindow(private val toolWindow: ToolWindow) {
+    class ConversationWindow(
+        private val project: Project,
+        @VisibleForTesting val conversation: Conversation = project.service(),
+        private val isTestMode: Boolean = false
+    ) {
 
-        private val conversation = toolWindow.project.service<Conversation>()
-        private val conversationPanel = ConversationPanel(conversation, toolWindow.project)
+        private val conversationPanel = ConversationPanel(conversation, project)
 
         init {
-            GlobalScope.launch(Dispatchers.EDT) {
-                conversation.isChatInProgress
-                    .flatMapLatest { inProgress ->
-                        flow {
-                            sendToolbar.updateActionsAsync().await()
-                            emit(inProgress)
+            if (!isTestMode) {
+                GlobalScope.launch(Dispatchers.EDT) {
+                    conversation.isChatInProgress
+                        .flatMapLatest { inProgress ->
+                            flow {
+                                sendToolbar.updateActionsAsync().await()
+                                emit(inProgress)
+                            }
                         }
-                    }
-                    .collect { inProgress ->
-                        inputArea.isEnabled = !inProgress
-                        if (!inProgress) {
-                            inputArea.requestFocusInWindow()
+                        .collect { inProgress ->
+                            inputArea.isEnabled = !inProgress
+                            if (!inProgress) {
+                                inputArea.requestFocusInWindow()
+                            }
                         }
-                    }
+                }
             }
         }
 
-        private val inputArea: InputArea = InputArea().apply {
+        @VisibleForTesting
+        val inputArea: InputArea = InputArea().apply {
             placeholderText = "Ask Jarvis a question or type /? for help"
 
             addKeyListener(object : KeyAdapter() {
@@ -71,7 +78,8 @@ class ConversationWindowFactory : ToolWindowFactory {
             })
         }
 
-        private val sendAction = object : AnAction(AllIcons.Actions.Execute) {
+        @VisibleForTesting
+        val sendAction = object : AnAction(AllIcons.Actions.Execute) {
 
             init {
                 templatePresentation.text = "Send"
@@ -99,29 +107,45 @@ class ConversationWindowFactory : ToolWindowFactory {
             }
         }
 
-        private val sendToolbar = ActionManager.getInstance()
+        @VisibleForTesting
+        val sendToolbar = ActionManager.getInstance()
             .createActionToolbar("Jarvis.Chat.Send", DefaultActionGroup(sendAction), false)
             .apply {
                 targetComponent = inputArea
                 isReservePlaceAutoPopupIcon = false
             }
 
-        private fun sendMessage() {
+        @VisibleForTesting
+        fun sendMessage() {
             val message = inputArea.text.trim()
             if (message.isEmpty()) {
                 return
             }
 
-            GlobalScope.launch(Dispatchers.EDT) {
-                inputArea.text = ""
-                inputArea.isEnabled = false
-                conversation.chat(
-                    Message(
-                        Role.USER,
-                        message,
-                        CodeContextHelper.getCodeContext(toolWindow.project)
+            if (isTestMode) {
+                runBlocking(Dispatchers.EDT) {
+                    inputArea.text = ""
+                    inputArea.isEnabled = false
+                    conversation.chat(
+                        Message(
+                            Role.USER,
+                            message,
+                            CodeContextHelper.getCodeContext(project)
+                        )
                     )
-                )
+                }
+            } else {
+                GlobalScope.launch(Dispatchers.EDT) {
+                    inputArea.text = ""
+                    inputArea.isEnabled = false
+                    conversation.chat(
+                        Message(
+                            Role.USER,
+                            message,
+                            CodeContextHelper.getCodeContext(project)
+                        )
+                    )
+                }
             }
         }
 
