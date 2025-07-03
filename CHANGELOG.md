@@ -1,8 +1,27 @@
 # Jarvis Changelog
 
 ## [Unreleased]
-- Handle malformed code blocks using two backticks
-- Send button replaces stop button, shows a run icon and switches to a stop icon while a response is generated
+
+## [1.7.3] - 2025-07-03
+
+### Added
+
+- Send button
+- Function to stop LLM response generation
+- Smoother animation of LLM response generation
+
+### Changed
+
+- Set `qwen3:1.7b` as the default model
+
+### Fixed
+
+- Syntax highlighting is not causing an error anymore
+- Parsing of malformed Markdown from some smaller LLMs
+- Parsing and displaying of malformed codeblocks
+- No flickering of the message when the LLM response finished
+- Rare ClassCastException when displaying an in-progress message
+- Internal usage of deprecated APIs
 
 ## [1.7.1] - 2025-06-18
 
