@@ -50,7 +50,7 @@ data class Message(
             - ```/new``` - Starts a new conversation
             - ```/plain``` - Sends a chat message without code context
             - ```/copy``` - Copies the conversation to the clipboard
-            - ```/model <modelName>``` - Changes the model to use (`default` is `qwen3:4b`)
+            - ```/model <modelName>``` - Changes the model to use (`default` is `qwen3:1.7b`)
             - ```/host <host>``` - Sets the Ollama host (`default` is `http://localhost:11434`)
             """.trimIndent()
         )
