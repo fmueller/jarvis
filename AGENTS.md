@@ -10,13 +10,14 @@
 ## Code Style
 
 - Kotlin sources are in `src/main/kotlin` and tests in `src/test/kotlin`.
-- Use 4 spaces for indentation and keep lines under 120 characters.
+- Use four spaces for indentation and keep lines under 120 characters.
 - End every file with a single newline.
 - Do not add dependencies. Only use the available libraries.
 - Keep public functions and classes documented with KDoc comments when adding new code.
 - Always use curly braces `{}` for all control structures (such as `if`, `else`, `for`, `while`, and `when`), even when the body is a single statement.
 - Try to add unit tests for changes as you see fit.
-- Do not use the reflections API.
+- Do NOT use the reflections API.
+- If you need to change the visibility of a function or field to improve testability, add the @VisibleForTesting annotation.
 
 ## Documentation
 
@@ -31,4 +32,5 @@
     - `refactor: move files to domain folder xyz`
     - `docs: improve docs about data from report xyz`
     - `chore: cleanup files`
+    - `style: adjust formatting for clarity`
 - Summarize important modifications in the PR description.
