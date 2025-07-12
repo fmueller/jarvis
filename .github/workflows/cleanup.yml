@@ -1,0 +1,20 @@
+name: Cleanup PR Caches
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  actions: write
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete caches for branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="${{ github.event.pull_request.head.ref }}"
+          echo "Removing caches for $branch"
+          gh api -X DELETE "repos/${{ github.repository }}/actions/caches?branch=$branch"
