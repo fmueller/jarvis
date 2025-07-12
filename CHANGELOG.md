@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Remove caches for closed pull requests in CI
+
 ## [1.7.3] - 2025-07-03
 
 ### Added
