@@ -6,6 +6,10 @@
 
 - Remove caches for closed pull requests in CI
 
+### Fixed
+
+- Do not fail CI cache cleanup when no cache is found
+
 ## [1.7.3] - 2025-07-03
 
 ### Added
