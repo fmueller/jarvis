@@ -18,4 +18,4 @@ jobs:
           branch="${{ github.event.pull_request.head.ref }}"
           ref="refs/heads/$branch"
           echo "Removing caches for $branch"
-          gh api -X DELETE "repos/${{ github.repository }}/actions/caches?key=$branch&ref=$ref"
+          gh api -X DELETE "repos/${{ github.repository }}/actions/caches?key=$branch&ref=$ref" || echo "No caches found"
