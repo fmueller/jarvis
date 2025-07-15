@@ -69,7 +69,6 @@ class MessagePanel(
     sealed interface ParsedContent
     data class Content(val markdown: String) : ParsedContent
     data class Code(val languageId: String, val content: String) : ParsedContent
-    data class Reasoning(val markdown: String, val isInProgress: Boolean = false) : ParsedContent
 
     private val highlightedCodeHelper = SyntaxHighlightedCodeHelper(project)
 
@@ -165,7 +164,7 @@ class MessagePanel(
             return
         }
 
-        val (reasoning, contentList) = parse(messageToUpdate.contentWithClosedTrailingCodeBlock())
+        val (reasoning, contentList) = parse(messageToUpdate)
 
         if (!isReasoningPanel) {
             if (reasoning != null) {
@@ -220,11 +219,6 @@ class MessagePanel(
                             addHighlightedCode((new as Code).languageId, new.content)
                         }
 
-                        is Reasoning -> {
-                            // This should not happen anymore as reasoning is handled separately
-                            remove(componentCount - 1)
-                            addNonCodeContent((new as Reasoning).markdown)
-                        }
                     }
                     break
                 }
@@ -249,7 +243,6 @@ class MessagePanel(
         return when (old) {
             is Content -> (new as Content).markdown.startsWith(old.markdown)
             is Code -> (new as Code).content.startsWith(old.content) && new.languageId == old.languageId
-            is Reasoning -> (new as Reasoning).markdown.startsWith(old.markdown)
         }
     }
 
@@ -261,7 +254,6 @@ class MessagePanel(
         return when (old) {
             is Content -> (new as Content).markdown != old.markdown
             is Code -> (new as Code).content != old.content || new.languageId != old.languageId
-            is Reasoning -> (new as Reasoning).markdown != old.markdown
         }
     }
 
@@ -341,23 +333,11 @@ class MessagePanel(
         }
     }
 
-    private fun parse(markdown: String): Pair<Reasoning?, List<ParsedContent>> {
+    private fun parse(message: Message): Pair<Message.Reasoning?, List<ParsedContent>> {
         val parsed = mutableListOf<ParsedContent>()
-        var reasoning: Reasoning? = null
 
-        var remaining = markdown
-        if (remaining.startsWith("<think>")) {
-            val end = remaining.indexOf("</think>")
-            if (end != -1) {
-                val reasoningText = remaining.substring("<think>".length, end)
-                reasoning = Reasoning(reasoningText, false)
-                remaining = remaining.substring(end + "</think>".length)
-            } else {
-                val reasoningText = remaining.removePrefix("<think>")
-                reasoning = Reasoning(reasoningText, true)
-                remaining = ""
-            }
-        }
+        val closed = message.contentWithClosedTrailingCodeBlock()
+        val (reasoning, remaining) = message.copy(content = closed).parseReasoning()
 
         val matcher = codeBlockPattern.matcher(remaining)
         var lastEnd = 0
@@ -390,11 +370,6 @@ class MessagePanel(
             when (it) {
                 is Content -> addNonCodeContent(it.markdown)
                 is Code -> addHighlightedCode(it.languageId, it.content)
-                is Reasoning -> {
-                    // Reasoning blocks are now handled separately in updatePanel
-                    // This case should not occur anymore, but handle it gracefully
-                    addNonCodeContent(it.markdown)
-                }
             }
         }
     }

@@ -38,6 +38,8 @@ data class Message(
     val createdAt: LocalDateTime = LocalDateTime.now()
 ) {
 
+    data class Reasoning(val markdown: String, val isInProgress: Boolean = false)
+
     companion object {
 
         val HELP_MESSAGE = fromAssistant(
@@ -58,7 +60,27 @@ data class Message(
         fun fromAssistant(content: String) = Message(Role.ASSISTANT, content)
         fun fromUser(content: String) = Message(Role.USER, content)
         fun info(content: String) = Message(Role.INFO, content)
+
+        fun parseReasoning(text: String): Pair<Reasoning?, String> {
+            var reasoning: Reasoning? = null
+            var remaining = text
+            if (remaining.startsWith("<think>")) {
+                val end = remaining.indexOf("</think>")
+                if (end != -1) {
+                    val reasoningText = remaining.substring("<think>".length, end)
+                    reasoning = Reasoning(reasoningText, false)
+                    remaining = remaining.substring(end + "</think>".length)
+                } else {
+                    val reasoningText = remaining.removePrefix("<think>")
+                    reasoning = Reasoning(reasoningText, true)
+                    remaining = ""
+                }
+            }
+            return reasoning to remaining
+        }
     }
+
+    fun parseReasoning(): Pair<Reasoning?, String> = parseReasoning(content)
 
     fun contentWithClosedTrailingCodeBlock(): String {
         if (isHelpMessage()) {
