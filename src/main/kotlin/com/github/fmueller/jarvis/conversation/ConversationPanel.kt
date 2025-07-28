@@ -18,6 +18,8 @@ class ConversationPanel(conversation: Conversation, private val project: Project
 
     internal var updatePanel: MessagePanel? = null
 
+    private val messagePanels = mutableListOf<MessagePanel>()
+
     // we are exposing the scrollable container here and keep it in the panel
     // because we need to adjust the scroll position when new messages are added
     val scrollableContainer = JBScrollPane(panel).apply {
@@ -100,27 +102,39 @@ class ConversationPanel(conversation: Conversation, private val project: Project
 
         // Handle the case where messages have been cleared (e.g., new conversation)
         if (messages.size < existingMessageCount) {
+            messagePanels.forEach { Disposer.dispose(it) }
+            messagePanels.clear()
             panel.removeAll()
             updatePanel = null
 
             messages.forEach { message ->
-                panel.add(MessagePanel.create(message, project))
+                val messagePanel = MessagePanel.create(message, project)
+                Disposer.register(this, messagePanel)
+                messagePanels.add(messagePanel)
+                panel.add(messagePanel)
             }
         } else if (updatePanel != null && messages.size > existingMessageCount) {
             // Handle the case where we have an updatePanel that should become permanent
             updatePanel!!.message = messages.last()
+            messagePanels.add(updatePanel!!)
             // Clear the updatePanel reference since it's now a permanent part of the conversation
             updatePanel = null
 
             val remainingMessages = messages.drop(currentComponentCount)
             remainingMessages.forEach { message ->
-                panel.add(MessagePanel.create(message, project))
+                val messagePanel = MessagePanel.create(message, project)
+                Disposer.register(this, messagePanel)
+                messagePanels.add(messagePanel)
+                panel.add(messagePanel)
             }
         } else {
             // Handle normal case where new messages are added
             val messagesToAdd = messages.drop(existingMessageCount)
             messagesToAdd.forEach { message ->
-                panel.add(MessagePanel.create(message, project))
+                val messagePanel = MessagePanel.create(message, project)
+                Disposer.register(this, messagePanel)
+                messagePanels.add(messagePanel)
+                panel.add(messagePanel)
             }
         }
 
@@ -129,7 +143,10 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     }
 
     override fun dispose() {
-        // nothing to dispose here, all message panels are disposed when the panel is cleared
-        // or automatically when the conversation is disposed
+        messagePanels.forEach { Disposer.dispose(it) }
+        messagePanels.clear()
+
+        updatePanel?.let { Disposer.dispose(it) }
+        updatePanel = null
     }
 }
