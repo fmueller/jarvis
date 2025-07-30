@@ -28,7 +28,7 @@ repositories {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation(libs.flexmark)
-    implementation("dev.langchain4j:langchain4j:1.1.0")
+    implementation("dev.langchain4j:langchain4j:1.2.0")
     implementation("dev.langchain4j:langchain4j-ollama:1.2.0")
     implementation("com.squareup.okhttp3:okhttp:5.1.0")
 
