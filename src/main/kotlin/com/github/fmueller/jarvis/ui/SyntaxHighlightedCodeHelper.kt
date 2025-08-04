@@ -50,14 +50,12 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
             }
 
         val editor = EditorFactory.getInstance().createEditor(document, project, fileType, true) as EditorEx
+        createdEditors.add(editor)
         editor.setFile(virtualFile)
 
         val highlighter = EditorHighlighterFactory.getInstance().createEditorHighlighter(project, fileType)
         editor.highlighter = highlighter
-
-        DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
-        createdEditors.add(editor)
-
+        editor.isViewer = true
         editor.settings.apply {
             isLineNumbersShown = false
             isFoldingOutlineShown = false
@@ -74,17 +72,23 @@ class SyntaxHighlightedCodeHelper(private val project: Project) {
             additionalLinesCount = 0
             additionalColumnsCount = 0
         }
+
+        DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
         return editor
     }
 
     fun disposeEditor(editor: Editor) {
-        if (createdEditors.remove(editor)) {
+        if (!editor.isDisposed && createdEditors.remove(editor)) {
             EditorFactory.getInstance().releaseEditor(editor)
         }
     }
 
     fun disposeAllEditors() {
-        createdEditors.forEach { EditorFactory.getInstance().releaseEditor(it) }
+        createdEditors.forEach {
+            if (!it.isDisposed) {
+                EditorFactory.getInstance().releaseEditor(it)
+            }
+        }
         createdEditors.clear()
     }
 }
