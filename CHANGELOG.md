@@ -5,6 +5,7 @@
 ### Added
 
 - Remove caches for closed pull requests in CI
+- Configurable context window size when calling Ollama
 
 ### Fixed
 
