@@ -144,6 +144,15 @@ object OllamaService {
             assistant = createAiService()
         }
 
+    /**
+     * Maximum number of tokens sent as context to Ollama.
+     */
+    var contextWindowSize: Int = 4096
+        set(value) {
+            field = value
+            assistant = createAiService()
+        }
+
     private var assistant = createAiService()
 
     fun clearChatMemory() {
@@ -350,6 +359,7 @@ object OllamaService {
                     .timeout(Duration.ofMinutes(5))
                     .baseUrl(host)
                     .modelName(modelName)
+                    .numCtx(contextWindowSize)
                     .build()
             )
             .systemMessageProvider { chatMemoryId -> systemPrompt }
