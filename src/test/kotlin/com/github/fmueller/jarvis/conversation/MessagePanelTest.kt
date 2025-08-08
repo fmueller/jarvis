@@ -172,7 +172,13 @@ class MessagePanelTest : BasePlatformTestCase() {
         messagePanel.message = Message.fromAssistant("<think>Reason</think>Hello")
 
         assertEquals(1, messagePanel.parsed.size)
-        assertTrue(messagePanel.reasoningMessagePanel?.message?.content?.contains("Reason") ?: false)
+        assertTrue(messagePanel.reasoningMessagePanel?.displayedText?.contains("Reason") ?: false)
+    }
+
+    fun `test reasoning panel shows last paragraph when in progress`() {
+        messagePanel.message = Message.fromAssistant("<think>First paragraph.\n\nSecond incomplete")
+
+        assertEquals("First paragraph.", messagePanel.reasoningMessagePanel?.displayedText)
     }
 
     fun `test reasoning panel toggle functionality`() {
