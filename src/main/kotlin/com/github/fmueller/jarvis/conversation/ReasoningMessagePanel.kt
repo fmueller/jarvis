@@ -16,8 +16,8 @@ class ReasoningMessagePanel : JPanel(), Disposable {
     private val currentPane = createPane()
     private val previousPane = createPane()
 
-    private val currentLayerUI = WaveMaskLayerUI()
-    private val previousLayerUI = WaveMaskLayerUI()
+    private val currentLayerUI = AlphaLayerUI()
+    private val previousLayerUI = AlphaLayerUI()
 
     private val currentLayer = JLayer(currentPane, currentLayerUI)
     private val previousLayer = JLayer(previousPane, previousLayerUI)
@@ -44,11 +44,7 @@ class ReasoningMessagePanel : JPanel(), Disposable {
         }
 
         if (displayedText == text) {
-            if (reasoning.isInProgress) {
-                currentLayerUI.start()
-            } else {
-                currentLayerUI.stop()
-            }
+            // No wave animation for reasoning content
             return
         }
 
@@ -56,24 +52,14 @@ class ReasoningMessagePanel : JPanel(), Disposable {
             currentPane.text = text
             displayedText = text
             updateHeight()
-            if (reasoning.isInProgress) {
-                currentLayerUI.start()
-            }
             return
         }
 
         previousPane.text = currentPane.text
-        previousLayerUI.baseAlpha = 1f
-        previousLayerUI.stop()
+        previousLayerUI.alpha = 1f
 
         currentPane.text = text
-        currentLayerUI.baseAlpha = 0f
-        if (reasoning.isInProgress) {
-            currentLayerUI.start()
-        } else {
-            currentLayerUI.stop()
-            currentLayerUI.baseAlpha = 1f
-        }
+        currentLayerUI.alpha = if (reasoning.isInProgress) 0f else 1f
         displayedText = text
         updateHeight()
         startFade()
@@ -83,10 +69,10 @@ class ReasoningMessagePanel : JPanel(), Disposable {
         fadeTimer?.stop()
         fadeTimer = Timer(60) {
             val step = 0.05f
-            previousLayerUI.baseAlpha = (previousLayerUI.baseAlpha - step).coerceAtLeast(0f)
-            currentLayerUI.baseAlpha = (currentLayerUI.baseAlpha + step).coerceAtMost(1f)
+            previousLayerUI.alpha = (previousLayerUI.alpha - step).coerceAtLeast(0f)
+            currentLayerUI.alpha = (currentLayerUI.alpha + step).coerceAtMost(1f)
             repaint()
-            if (previousLayerUI.baseAlpha <= 0f && currentLayerUI.baseAlpha >= 1f) {
+            if (previousLayerUI.alpha <= 0f && currentLayerUI.alpha >= 1f) {
                 fadeTimer?.stop()
                 previousPane.text = ""
             }
@@ -119,8 +105,7 @@ class ReasoningMessagePanel : JPanel(), Disposable {
 
     override fun dispose() {
         fadeTimer?.stop()
-        currentLayerUI.stop()
-        previousLayerUI.stop()
+        // Nothing to clean up
     }
 }
 
