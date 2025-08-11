@@ -181,6 +181,16 @@ class MessagePanelTest : BasePlatformTestCase() {
         assertEquals("First paragraph.", messagePanel.reasoningMessagePanel?.displayedText)
     }
 
+    fun `test reasoning duration label`() {
+        messagePanel.reasoningStartTimeMs = System.currentTimeMillis() - 65000
+        messagePanel.message = Message.fromAssistant("<think>Done</think>Hi")
+
+        val headerField = MessagePanel::class.java.getDeclaredField("reasoningHeaderButton")
+        headerField.isAccessible = true
+        val headerButton = headerField.get(messagePanel) as JButton
+        assertEquals("Reasoned for 1 minutes and 05 seconds", headerButton.text)
+    }
+
     fun `test reasoning panel toggle functionality`() {
         // Set a message with reasoning to make the reasoning panel visible
         messagePanel.message = Message.fromAssistant("<think>Reasoning content</think>Hello")

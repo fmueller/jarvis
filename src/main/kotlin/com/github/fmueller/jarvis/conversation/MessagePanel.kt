@@ -11,6 +11,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.HTMLEditorKitBuilder
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import javax.swing.JLayer
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
 import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
@@ -77,6 +78,7 @@ class MessagePanel(
 
     private var reasoningPanel: JPanel? = null
     private var reasoningHeaderButton: JButton? = null
+    private var reasoningHeaderLayerUI: WaveMaskLayerUI? = null
     private var reasoningContentPanel: JPanel? = null
     private var hasReasoningContent = false
 
@@ -84,6 +86,8 @@ class MessagePanel(
     var reasoningMessagePanel: ReasoningMessagePanel? = null
 
     private var reasoningDotsTimer: Timer? = null
+    @VisibleForTesting
+    var reasoningStartTimeMs: Long = 0L
 
     private var isReasoningExpanded: Boolean = false
         set(value) {
@@ -125,6 +129,7 @@ class MessagePanel(
         highlightedCodeHelper.disposeAllEditors()
         reasoningDotsTimer?.stop()
         reasoningMessagePanel?.dispose()
+        reasoningHeaderLayerUI?.stop()
         hasReasoningContent = false
     }
 
@@ -136,12 +141,25 @@ class MessagePanel(
             reasoningHeaderButton?.text = "Reasoning$dots"
             count = (count + 1) % 4
         }.apply { start() }
+        reasoningHeaderLayerUI?.start()
     }
 
     private fun stopReasoningDots() {
         reasoningDotsTimer?.stop()
         reasoningDotsTimer = null
         reasoningHeaderButton?.text = "Reasoning"
+        reasoningHeaderLayerUI?.stop()
+    }
+
+    private fun formatDuration(durationMs: Long): String {
+        val totalSeconds = durationMs / 1000
+        val minutes = totalSeconds / 60
+        val seconds = (totalSeconds % 60).toInt()
+        return if (minutes > 0) {
+            String.format("%d minutes and %02d seconds", minutes, seconds)
+        } else {
+            String.format("%d seconds", seconds)
+        }
     }
 
     private fun scheduleSmartUpdate(newMessage: Message) {
@@ -190,7 +208,7 @@ class MessagePanel(
                 hasReasoningContent = true
                 reasoningPanel?.isVisible = true
                 if (reasoningMessagePanel == null) {
-                    reasoningMessagePanel = ReasoningMessagePanel(project).apply {
+                    reasoningMessagePanel = ReasoningMessagePanel().apply {
                         background = reasoningPanel?.background
                             ?: UIUtil.getPanelBackground()
                         border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
@@ -199,9 +217,17 @@ class MessagePanel(
                 }
                 reasoningMessagePanel?.update(reasoning)
                 if (reasoning.isInProgress) {
+                    if (reasoningStartTimeMs == 0L) {
+                        reasoningStartTimeMs = System.currentTimeMillis()
+                    }
                     startReasoningDots()
                 } else {
                     stopReasoningDots()
+                    if (reasoningStartTimeMs != 0L) {
+                        val duration = System.currentTimeMillis() - reasoningStartTimeMs
+                        reasoningHeaderButton?.text = "Reasoned for ${formatDuration(duration)}"
+                        reasoningStartTimeMs = 0L
+                    }
                 }
                 isReasoningExpanded = reasoning.isInProgress
             } else if (!hasReasoningContent) {
@@ -343,11 +369,12 @@ class MessagePanel(
                 }
             }
             reasoningHeaderButton = headerButton
-
-            outerPanel.add(headerButton, BorderLayout.NORTH)
+            val headerWaveUI = WaveMaskLayerUI()
+            reasoningHeaderLayerUI = headerWaveUI
+            outerPanel.add(JLayer(headerButton, headerWaveUI), BorderLayout.NORTH)
             outerPanel.add(contentPanel, BorderLayout.CENTER)
 
-            reasoningMessagePanel = ReasoningMessagePanel(project).apply {
+            reasoningMessagePanel = ReasoningMessagePanel().apply {
                 background = outerPanel.background
                 border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
             }

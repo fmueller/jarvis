@@ -6,7 +6,7 @@
 
 - Remove caches for closed pull requests in CI
 - Configurable context window size when calling Ollama
-- Animated reasoning panel showing incremental paragraphs
+- Animated reasoning panel showing incremental paragraphs with wave masking and duration label
 
 ### Fixed
 
