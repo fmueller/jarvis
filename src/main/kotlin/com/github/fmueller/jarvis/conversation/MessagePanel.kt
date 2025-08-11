@@ -11,7 +11,6 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.HTMLEditorKitBuilder
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import javax.swing.JLayer
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
 import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
@@ -26,7 +25,7 @@ import javax.swing.*
 
 class MessagePanel(
     initialMessage: Message,
-    private val project: Project,
+    project: Project,
     private val isReasoningPanel: Boolean = false,
     private val isTestMode: Boolean = false
 ) : JPanel(), Disposable {
@@ -78,7 +77,6 @@ class MessagePanel(
 
     private var reasoningPanel: JPanel? = null
     private var reasoningHeaderButton: JButton? = null
-    private var reasoningHeaderLayerUI: WaveMaskLayerUI? = null
     private var reasoningContentPanel: JPanel? = null
     private var hasReasoningContent = false
 
@@ -98,6 +96,8 @@ class MessagePanel(
             } else {
                 com.intellij.icons.AllIcons.General.ArrowRight
             }
+            // Pass expansion state to reasoning panel
+            reasoningMessagePanel?.setExpanded(value)
         }
 
     private var _message: Message = initialMessage
@@ -129,26 +129,47 @@ class MessagePanel(
         highlightedCodeHelper.disposeAllEditors()
         reasoningDotsTimer?.stop()
         reasoningMessagePanel?.dispose()
-        reasoningHeaderLayerUI?.stop()
         hasReasoningContent = false
     }
 
     private fun startReasoningDots() {
         if (reasoningDotsTimer != null) return
+
+        // Reserve width for the largest state to prevent jitter
+        reasoningHeaderButton?.let { button ->
+            val fm = button.getFontMetrics(button.font)
+            val maxWidth = fm.stringWidth("Reasoning…")
+            val currentSize = button.preferredSize
+            button.preferredSize =
+                java.awt.Dimension(maxWidth + button.insets.left + button.insets.right, currentSize.height)
+        }
+
         var count = 0
-        reasoningDotsTimer = Timer(500) {
-            val dots = ".".repeat(count)
+        reasoningDotsTimer = Timer(450) {
+            val dots = when (count) {
+                0 -> "."
+                1 -> ".."
+                2 -> "…"
+                else -> ""
+            }
             reasoningHeaderButton?.text = "Reasoning$dots"
             count = (count + 1) % 4
         }.apply { start() }
-        reasoningHeaderLayerUI?.start()
     }
 
     private fun stopReasoningDots() {
         reasoningDotsTimer?.stop()
         reasoningDotsTimer = null
         reasoningHeaderButton?.text = "Reasoning"
-        reasoningHeaderLayerUI?.stop()
+
+        // Restore original width
+        reasoningHeaderButton?.let { button ->
+            val fm = button.getFontMetrics(button.font)
+            val originalWidth = fm.stringWidth("Reasoning")
+            val currentSize = button.preferredSize
+            button.preferredSize =
+                java.awt.Dimension(originalWidth + button.insets.left + button.insets.right, currentSize.height)
+        }
     }
 
     private fun formatDuration(durationMs: Long): String {
@@ -251,8 +272,7 @@ class MessagePanel(
                 if (i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
                     when (old) {
                         is Content -> {
-                            val component = getComponent(componentCount - 1)
-                            val editorPane = when (component) {
+                            val editorPane = when (val component = getComponent(componentCount - 1)) {
                                 is JEditorPane -> component
                                 is JBScrollPane if component.viewport.view is JEditorPane -> component.viewport.view as JEditorPane
                                 else -> throw IllegalStateException(
@@ -369,9 +389,7 @@ class MessagePanel(
                 }
             }
             reasoningHeaderButton = headerButton
-            val headerWaveUI = WaveMaskLayerUI()
-            reasoningHeaderLayerUI = headerWaveUI
-            outerPanel.add(JLayer(headerButton, headerWaveUI), BorderLayout.NORTH)
+            outerPanel.add(headerButton, BorderLayout.NORTH)
             outerPanel.add(contentPanel, BorderLayout.CENTER)
 
             reasoningMessagePanel = ReasoningMessagePanel().apply {
