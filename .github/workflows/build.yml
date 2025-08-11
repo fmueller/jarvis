@@ -119,9 +119,6 @@ jobs:
           gradle-home-cache-excludes: |
             caches/*/transforms-*
             caches/transforms-*
-          gradle-home-cache-excludes: |
-            caches/*/transforms-*
-            caches/transforms-*
 
       # Run tests
       - name: Run Tests
