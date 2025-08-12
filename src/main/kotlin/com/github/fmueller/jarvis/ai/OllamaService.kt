@@ -159,6 +159,32 @@ object OllamaService {
         assistant = createAiService()
     }
 
+    /**
+     * Retrieve the info card of the current model from Ollama.
+     *
+     * The info card is obtained via the `/api/show` endpoint and returned as
+     * plain text. Any errors are returned as part of the message.
+     */
+    fun getModelInfo(): String {
+        return try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create("$host/api/show"))
+                .timeout(Duration.ofSeconds(2))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
+                .build()
+
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            if (response.statusCode() == 200) {
+                response.body()
+            } else {
+                "Model info request failed: status ${response.statusCode()}"
+            }
+        } catch (e: Exception) {
+            "Model info request failed: ${e.message}"
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun chat(conversation: Conversation, useCodeContext: Boolean): String = withContext(Dispatchers.IO) {
         if (!ensureModelAvailable(conversation)) {
