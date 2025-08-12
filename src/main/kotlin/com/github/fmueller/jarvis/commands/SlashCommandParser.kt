@@ -16,6 +16,10 @@ object SlashCommandParser {
             return PlainChatCommand()
         }
 
+        if (trimmedMessage == "/model" || trimmedMessage == "/model-info") {
+            return ModelCommand()
+        }
+
         if (trimmedMessage.startsWith("/model ")) {
             val modelName = trimmedMessage.removePrefix("/model ").trim()
             return ModelCommand(modelName)

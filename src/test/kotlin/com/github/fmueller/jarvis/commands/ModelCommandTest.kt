@@ -3,8 +3,10 @@ package com.github.fmueller.jarvis.commands
 import com.github.fmueller.jarvis.ai.OllamaService
 import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.Role
+import com.sun.net.httpserver.HttpServer
 import junit.framework.TestCase
 import kotlinx.coroutines.runBlocking
+import java.net.InetSocketAddress
 
 class ModelCommandTest : TestCase() {
 
@@ -36,5 +38,26 @@ class ModelCommandTest : TestCase() {
         ModelCommand("default").run(conversation)
 
         assertEquals(OllamaService.DEFAULT_MODEL_NAME, OllamaService.modelName)
+    }
+
+    fun `test run without model name shows model info`() = runBlocking {
+        val conversation = Conversation()
+        val server = HttpServer.create(InetSocketAddress(0), 0)
+        val response = "{\"license\":\"test\"}"
+        server.createContext("/api/show") { exchange ->
+            exchange.sendResponseHeaders(200, response.toByteArray().size.toLong())
+            exchange.responseBody.use { it.write(response.toByteArray()) }
+        }
+        server.start()
+        val originalHost = OllamaService.host
+        try {
+            OllamaService.host = "http://localhost:${server.address.port}"
+            ModelCommand().run(conversation)
+        } finally {
+            OllamaService.host = originalHost
+            server.stop(0)
+        }
+        assertEquals(response, conversation.messages.last().content)
+        assertEquals(Role.INFO, conversation.messages.last().role)
     }
 }
