@@ -365,7 +365,7 @@ object OllamaService {
             .systemMessageProvider { chatMemoryId -> systemPrompt }
             .chatMemory(
                 TokenWindowChatMemory.builder()
-                    .maxTokens(128_000, SimpleTokenizer())
+                    .maxTokens(contextWindowSize, SimpleTokenizer())
                     .build()
             )
             .build()
