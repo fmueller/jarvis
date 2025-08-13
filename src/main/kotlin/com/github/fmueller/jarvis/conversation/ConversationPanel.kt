@@ -19,6 +19,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     internal var updatePanel: MessagePanel? = null
 
     private val messagePanels = mutableListOf<MessagePanel>()
+    private var shouldFadeNextMessage = false
 
     // we are exposing the scrollable container here and keep it in the panel
     // because we need to adjust the scroll position when new messages are added
@@ -82,9 +83,11 @@ class ConversationPanel(conversation: Conversation, private val project: Project
                 panel.revalidate()
                 panel.repaint()
             }
+            shouldFadeNextMessage = true
             return
         }
 
+        shouldFadeNextMessage = false
         if (updatePanel == null) {
             updatePanel = MessagePanel.create(Message.fromAssistant(update), project)
             Disposer.register(this, updatePanel!!)
@@ -106,6 +109,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             messagePanels.clear()
             panel.removeAll()
             updatePanel = null
+            shouldFadeNextMessage = false
 
             messages.forEach { message ->
                 val messagePanel = MessagePanel.create(message, project)
@@ -115,10 +119,11 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             }
         } else if (updatePanel != null && messages.size > existingMessageCount) {
             // Handle the case where we have an updatePanel that should become permanent
-            updatePanel!!.message = messages.last()
+            updatePanel!!.fadeInFinalMessage(messages.last())
             messagePanels.add(updatePanel!!)
             // Clear the updatePanel reference since it's now a permanent part of the conversation
             updatePanel = null
+            shouldFadeNextMessage = false
 
             val remainingMessages = messages.drop(currentComponentCount)
             remainingMessages.forEach { message ->
@@ -130,8 +135,12 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         } else {
             // Handle normal case where new messages are added
             val messagesToAdd = messages.drop(existingMessageCount)
-            messagesToAdd.forEach { message ->
+            messagesToAdd.forEachIndexed { index, message ->
                 val messagePanel = MessagePanel.create(message, project)
+                if (shouldFadeNextMessage && index == 0 && message.role == Role.ASSISTANT) {
+                    messagePanel.fadeInFinalMessage()
+                    shouldFadeNextMessage = false
+                }
                 Disposer.register(this, messagePanel)
                 messagePanels.add(messagePanel)
                 panel.add(messagePanel)
