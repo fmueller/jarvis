@@ -51,7 +51,9 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         conversation.addPropertyChangeListener {
             if (it.propertyName == "messages") {
                 SwingUtilities.invokeLater {
-                    isUserScrolling = false
+                    if (updatePanel == null) {
+                        isUserScrolling = false
+                    }
                     val newMessages = (it.newValue as? List<*>)?.filterIsInstance<Message>()
                         ?: throw IllegalStateException("Property 'messages' must be a list of messages")
                     updateSmooth(newMessages)
@@ -62,7 +64,9 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         conversation.addPropertyChangeListener {
             if (it.propertyName == "messageBeingGenerated") {
                 SwingUtilities.invokeLater {
-                    isUserScrolling = false
+                    if (updatePanel == null) {
+                        isUserScrolling = true
+                    }
                     updateMessageInProgress(it.newValue as String)
                 }
             }
