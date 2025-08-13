@@ -11,6 +11,7 @@ import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -163,7 +164,7 @@ object OllamaService {
      * Retrieve the info card of the current model from Ollama.
      *
      * The info card is obtained via the `/api/show` endpoint and returned as
-     * plain text. Any errors are returned as part of the message.
+     * a nicely formatted card similar to `ollama show <model>` CLI output.
      */
     fun getModelInfo(): String {
         return try {
@@ -176,12 +177,82 @@ object OllamaService {
 
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
             if (response.statusCode() == 200) {
-                response.body()
+                formatModelInfo(response.body())
             } else {
                 "Model info request failed: status ${response.statusCode()}"
             }
         } catch (e: Exception) {
             "Model info request failed: ${e.message}"
+        }
+    }
+
+    private fun formatModelInfo(jsonResponse: String): String {
+        return try {
+            val json = Json.parseToJsonElement(jsonResponse).jsonObject
+            val result = StringBuilder()
+
+            // Model section
+            result.append(" Model\n")
+            json["details"]?.jsonObject?.let { details ->
+                details["family"]?.jsonPrimitive?.content?.let { 
+                    result.append("    architecture        $it\n") 
+                }
+                details["parameter_size"]?.jsonPrimitive?.content?.let { 
+                    result.append("    parameters          $it\n") 
+                }
+                details["quantization_level"]?.jsonPrimitive?.content?.let { 
+                    result.append("    quantization        $it\n") 
+                }
+            }
+
+            result.append("\n")
+
+            // Parameters section
+            result.append("  Parameters\n")
+            json["parameters"]?.let { params ->
+                if (params.jsonPrimitive.isString) {
+                    // Parameters is a string literal, append it with proper formatting
+                    val parametersText = params.jsonPrimitive.content
+                    parametersText.lines().forEach { line ->
+                        val trimmedLine = line.trim()
+                        if (trimmedLine.isNotEmpty()) {
+                            result.append("    $trimmedLine\n")
+                        }
+                    }
+                } else {
+                    // Parameters is a JSON object (fallback to original logic)
+                    params.jsonObject.forEach { (key, value) ->
+                        when (key) {
+                            "num_ctx" -> result.append("    context length      ${value.jsonPrimitive.content}\n")
+                            "top_k" -> result.append("    top_k             ${value.jsonPrimitive.content}\n")
+                            "top_p" -> result.append("    top_p             ${value.jsonPrimitive.content}\n")
+                            "repeat_penalty" -> result.append("    repeat_penalty    ${value.jsonPrimitive.content}\n")
+                            "temperature" -> result.append("    temperature       ${value.jsonPrimitive.content}\n")
+                            "stop" -> {
+                                if (value is JsonArray) {
+                                    value.forEach { stopToken ->
+                                        result.append("    stop              \"${stopToken.jsonPrimitive.content}\"\n")
+                                    }
+                                } else {
+                                    result.append("    stop              \"${value.jsonPrimitive.content}\"\n")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            result.append("\n")
+
+            // License section (if available)
+            json["license"]?.jsonPrimitive?.content?.let { license ->
+                result.append("  License\n")
+                result.append("    ${license.lines().first()}")
+            }
+
+            result.toString().trimEnd()
+        } catch (e: Exception) {
+            "Failed to format model info: ${e.message}\n\nRaw response:\n$jsonResponse"
         }
     }
 
