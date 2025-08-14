@@ -11,6 +11,7 @@ import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -157,6 +158,87 @@ object OllamaService {
 
     fun clearChatMemory() {
         assistant = createAiService()
+    }
+
+    /**
+     * Retrieve the info card of the current model from Ollama.
+     *
+     * The info card is obtained via the `/api/show` endpoint and returned as
+     * a nicely formatted card similar to `ollama show <model>` CLI output.
+     */
+    fun getModelInfo(): String {
+        return try {
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create("$host/api/show"))
+                .timeout(Duration.ofSeconds(2))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"$modelName\"}"))
+                .build()
+
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            if (response.statusCode() == 200) {
+                formatModelInfo(response.body())
+            } else {
+                "Model info request failed: status ${response.statusCode()}"
+            }
+        } catch (e: Exception) {
+            "Model info request failed: ${e.message}"
+        }
+    }
+
+    private fun formatModelInfo(jsonResponse: String): String {
+        return try {
+            val json = Json.parseToJsonElement(jsonResponse).jsonObject
+            val result = StringBuilder()
+
+            // Model section
+            result.append(" Model\n")
+            json["details"]?.jsonObject?.let { details ->
+                details["family"]?.jsonPrimitive?.content?.let {
+                    result.append("    architecture        $it\n")
+                }
+                details["parameter_size"]?.jsonPrimitive?.content?.let {
+                    result.append("    parameters          $it\n")
+                }
+                details["quantization_level"]?.jsonPrimitive?.content?.let {
+                    result.append("    quantization        $it\n")
+                }
+            }
+
+            result.append("\n")
+
+            // Parameters section
+            result.append("  Parameters\n")
+
+            json["model_info"]?.jsonObject?.get("llama.context_length")?.jsonPrimitive?.content?.let { contextLength ->
+                result.append("    context length      $contextLength\n")
+            }
+
+            json["parameters"]?.let { params ->
+                if (params.jsonPrimitive.isString) {
+                    // Parameters is a string literal, append it with proper formatting
+                    val parametersText = params.jsonPrimitive.content
+                    parametersText.lines().forEach { line ->
+                        val trimmedLine = line.trim()
+                        if (trimmedLine.isNotEmpty()) {
+                            result.append("    $trimmedLine\n")
+                        }
+                    }
+                }
+            }
+
+            result.append("\n")
+
+            // License section (if available)
+            json["license"]?.jsonPrimitive?.content?.let { license ->
+                result.append("  License\n")
+                result.append("    ${license.lines().first()}")
+            }
+
+            result.toString().trimEnd()
+        } catch (e: Exception) {
+            "Failed to format model info: ${e.message}\n\nRaw response:\n$jsonResponse"
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -365,7 +447,7 @@ object OllamaService {
             .systemMessageProvider { chatMemoryId -> systemPrompt }
             .chatMemory(
                 TokenWindowChatMemory.builder()
-                    .maxTokens(128_000, SimpleTokenizer())
+                    .maxTokens(contextWindowSize, SimpleTokenizer())
                     .build()
             )
             .build()

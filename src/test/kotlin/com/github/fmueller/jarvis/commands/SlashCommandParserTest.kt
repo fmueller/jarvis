@@ -24,6 +24,16 @@ class SlashCommandParserTest : TestCase() {
         assertTrue(command is ModelCommand)
     }
 
+    fun `test parse model without name returns ModelCommand`() {
+        val command = SlashCommandParser.parse("/model")
+        assertTrue(command is ModelCommand)
+    }
+
+    fun `test parse model info returns ModelCommand`() {
+        val command = SlashCommandParser.parse("/model-info")
+        assertTrue(command is ModelCommand)
+    }
+
     fun `test parse host returns HostCommand`() {
         val command = SlashCommandParser.parse("/host http://1.2.3.4")
         assertTrue(command is HostCommand)

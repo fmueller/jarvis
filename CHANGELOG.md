@@ -7,10 +7,12 @@
 - Remove caches for closed pull requests in CI
 - Configurable context window size when calling Ollama
 - Animated reasoning panel with wave-animated title, fading paragraphs, and duration label
+- `/model` shows model info when no name is supplied and new `/model-info` command
 
 ### Fixed
 
 - Do not fail CI cache cleanup when no cache is found
+- Use configured context window size for chat memory token limit
 
 ## [1.7.3] - 2025-07-03
 
