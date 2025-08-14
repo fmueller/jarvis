@@ -338,4 +338,12 @@ class MessagePanelTest : BasePlatformTestCase() {
         // Should have one less component (removed the second code block)
         assertEquals(initialComponentCount - 1, messagePanel.componentCount)
     }
+
+    fun `test fadeInFinalMessage sets alpha to zero and updates content`() {
+        runInEdtAndGet {
+            messagePanel.fadeInFinalMessage(Message.fromAssistant("Final"))
+        }
+        assertEquals("Final", messagePanel.message.content)
+        assertEquals(0f, messagePanel.currentAlpha)
+    }
 }
