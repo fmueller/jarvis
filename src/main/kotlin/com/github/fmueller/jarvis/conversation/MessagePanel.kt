@@ -38,7 +38,7 @@ class MessagePanel(
         private const val UPDATE_DELAY_MS = 100
         private const val MIN_CONTENT_CHANGE = 5
         private const val MIN_UPDATE_INTERVAL_MS = 50
-        private const val FADE_IN_DELAY_MS = 30
+        private const val FADE_IN_DELAY_MS = 50
         private const val FADE_IN_STEP = 0.1f
 
         private val codeBlockPattern = Pattern.compile("`{2,}(\\w+)?\\n(.*?)\\n\\s*`{2,}", Pattern.DOTALL)
