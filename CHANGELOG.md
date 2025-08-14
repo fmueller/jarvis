@@ -12,6 +12,10 @@
 - Do not fail CI cache cleanup when no cache is found
 - Use configured context window size for chat memory token limit
 
+### Changed
+
+- Fade in completed LLM responses only when faster than the normal typing animation
+
 ## [1.7.3] - 2025-07-03
 
 ### Added
