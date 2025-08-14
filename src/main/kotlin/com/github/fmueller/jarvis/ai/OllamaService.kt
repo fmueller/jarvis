@@ -194,14 +194,14 @@ object OllamaService {
             // Model section
             result.append(" Model\n")
             json["details"]?.jsonObject?.let { details ->
-                details["family"]?.jsonPrimitive?.content?.let { 
-                    result.append("    architecture        $it\n") 
+                details["family"]?.jsonPrimitive?.content?.let {
+                    result.append("    architecture        $it\n")
                 }
-                details["parameter_size"]?.jsonPrimitive?.content?.let { 
-                    result.append("    parameters          $it\n") 
+                details["parameter_size"]?.jsonPrimitive?.content?.let {
+                    result.append("    parameters          $it\n")
                 }
-                details["quantization_level"]?.jsonPrimitive?.content?.let { 
-                    result.append("    quantization        $it\n") 
+                details["quantization_level"]?.jsonPrimitive?.content?.let {
+                    result.append("    quantization        $it\n")
                 }
             }
 
@@ -209,6 +209,14 @@ object OllamaService {
 
             // Parameters section
             result.append("  Parameters\n")
+
+            // First, check for context length in details
+            var contextLengthFound = false
+            json["model_info"]?.jsonObject?.get("llama.context_length")?.jsonPrimitive?.content?.let { contextLength ->
+                result.append("    context length      $contextLength\n")
+                contextLengthFound = true
+            }
+
             json["parameters"]?.let { params ->
                 if (params.jsonPrimitive.isString) {
                     // Parameters is a string literal, append it with proper formatting
@@ -223,7 +231,12 @@ object OllamaService {
                     // Parameters is a JSON object (fallback to original logic)
                     params.jsonObject.forEach { (key, value) ->
                         when (key) {
-                            "num_ctx" -> result.append("    context length      ${value.jsonPrimitive.content}\n")
+                            "num_ctx" -> {
+                                // Only add if we haven't already found context length in details
+                                if (!contextLengthFound) {
+                                    result.append("    context length      ${value.jsonPrimitive.content}\n")
+                                }
+                            }
                             "top_k" -> result.append("    top_k             ${value.jsonPrimitive.content}\n")
                             "top_p" -> result.append("    top_p             ${value.jsonPrimitive.content}\n")
                             "repeat_penalty" -> result.append("    repeat_penalty    ${value.jsonPrimitive.content}\n")
