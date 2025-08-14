@@ -210,11 +210,8 @@ object OllamaService {
             // Parameters section
             result.append("  Parameters\n")
 
-            // First, check for context length in details
-            var contextLengthFound = false
             json["model_info"]?.jsonObject?.get("llama.context_length")?.jsonPrimitive?.content?.let { contextLength ->
                 result.append("    context length      $contextLength\n")
-                contextLengthFound = true
             }
 
             json["parameters"]?.let { params ->
@@ -225,31 +222,6 @@ object OllamaService {
                         val trimmedLine = line.trim()
                         if (trimmedLine.isNotEmpty()) {
                             result.append("    $trimmedLine\n")
-                        }
-                    }
-                } else {
-                    // Parameters is a JSON object (fallback to original logic)
-                    params.jsonObject.forEach { (key, value) ->
-                        when (key) {
-                            "num_ctx" -> {
-                                // Only add if we haven't already found context length in details
-                                if (!contextLengthFound) {
-                                    result.append("    context length      ${value.jsonPrimitive.content}\n")
-                                }
-                            }
-                            "top_k" -> result.append("    top_k             ${value.jsonPrimitive.content}\n")
-                            "top_p" -> result.append("    top_p             ${value.jsonPrimitive.content}\n")
-                            "repeat_penalty" -> result.append("    repeat_penalty    ${value.jsonPrimitive.content}\n")
-                            "temperature" -> result.append("    temperature       ${value.jsonPrimitive.content}\n")
-                            "stop" -> {
-                                if (value is JsonArray) {
-                                    value.forEach { stopToken ->
-                                        result.append("    stop              \"${stopToken.jsonPrimitive.content}\"\n")
-                                    }
-                                } else {
-                                    result.append("    stop              \"${value.jsonPrimitive.content}\"\n")
-                                }
-                            }
                         }
                     }
                 }
