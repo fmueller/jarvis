@@ -25,7 +25,7 @@ import javax.swing.*
 
 class MessagePanel(
     initialMessage: Message,
-    private val project: Project,
+    project: Project,
     private val isReasoningPanel: Boolean = false,
     private val isTestMode: Boolean = false
 ) : JPanel(), Disposable {
@@ -81,7 +81,11 @@ class MessagePanel(
     private var hasReasoningContent = false
 
     @VisibleForTesting
-    var reasoningMessagePanel: MessagePanel? = null
+    var reasoningMessagePanel: ReasoningMessagePanel? = null
+
+    private var reasoningDotsTimer: Timer? = null
+    @VisibleForTesting
+    var reasoningStartTimeMs: Long = 0L
 
     private var isReasoningExpanded: Boolean = false
         set(value) {
@@ -92,6 +96,8 @@ class MessagePanel(
             } else {
                 com.intellij.icons.AllIcons.General.ArrowRight
             }
+            // Pass expansion state to reasoning panel
+            reasoningMessagePanel?.setExpanded(value)
         }
 
     private var _message: Message = initialMessage
@@ -121,8 +127,60 @@ class MessagePanel(
         updateTimer.stop()
         parsed.clear()
         highlightedCodeHelper.disposeAllEditors()
+        reasoningDotsTimer?.stop()
         reasoningMessagePanel?.dispose()
         hasReasoningContent = false
+    }
+
+    private fun startReasoningDots() {
+        if (reasoningDotsTimer != null) return
+
+        // Reserve width for the largest state to prevent jitter
+        reasoningHeaderButton?.let { button ->
+            val fm = button.getFontMetrics(button.font)
+            val maxWidth = fm.stringWidth("Reasoning…")
+            val currentSize = button.preferredSize
+            button.preferredSize =
+                java.awt.Dimension(maxWidth + button.insets.left + button.insets.right, currentSize.height)
+        }
+
+        var count = 0
+        reasoningDotsTimer = Timer(450) {
+            val dots = when (count) {
+                0 -> "."
+                1 -> ".."
+                2 -> "…"
+                else -> ""
+            }
+            reasoningHeaderButton?.text = "Reasoning$dots"
+            count = (count + 1) % 4
+        }.apply { start() }
+    }
+
+    private fun stopReasoningDots() {
+        reasoningDotsTimer?.stop()
+        reasoningDotsTimer = null
+        reasoningHeaderButton?.text = "Reasoning"
+
+        // Restore original width
+        reasoningHeaderButton?.let { button ->
+            val fm = button.getFontMetrics(button.font)
+            val originalWidth = fm.stringWidth("Reasoning")
+            val currentSize = button.preferredSize
+            button.preferredSize =
+                java.awt.Dimension(originalWidth + button.insets.left + button.insets.right, currentSize.height)
+        }
+    }
+
+    private fun formatDuration(durationMs: Long): String {
+        val totalSeconds = durationMs / 1000
+        val minutes = totalSeconds / 60
+        val seconds = (totalSeconds % 60).toInt()
+        return if (minutes > 0) {
+            String.format("%d minutes and %02d seconds", minutes, seconds)
+        } else {
+            String.format("%d seconds", seconds)
+        }
     }
 
     private fun scheduleSmartUpdate(newMessage: Message) {
@@ -171,11 +229,27 @@ class MessagePanel(
                 hasReasoningContent = true
                 reasoningPanel?.isVisible = true
                 if (reasoningMessagePanel == null) {
-                    reasoningMessagePanel = MessagePanel(Message.fromAssistant(reasoning.markdown), project, true, isTestMode)
-                } else {
-                    reasoningMessagePanel?.message = Message.fromAssistant(reasoning.markdown)
+                    reasoningMessagePanel = ReasoningMessagePanel().apply {
+                        background = reasoningPanel?.background
+                            ?: UIUtil.getPanelBackground()
+                        border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
+                    }
+                    reasoningContentPanel?.add(reasoningMessagePanel, BorderLayout.CENTER)
                 }
-                reasoningHeaderButton?.text = "Reasoning${if (reasoning.isInProgress) "..." else ""}"
+                reasoningMessagePanel?.update(reasoning)
+                if (reasoning.isInProgress) {
+                    if (reasoningStartTimeMs == 0L) {
+                        reasoningStartTimeMs = System.currentTimeMillis()
+                    }
+                    startReasoningDots()
+                } else {
+                    stopReasoningDots()
+                    if (reasoningStartTimeMs != 0L) {
+                        val duration = System.currentTimeMillis() - reasoningStartTimeMs
+                        reasoningHeaderButton?.text = "Reasoned for ${formatDuration(duration)}"
+                        reasoningStartTimeMs = 0L
+                    }
+                }
                 isReasoningExpanded = reasoning.isInProgress
             } else if (!hasReasoningContent) {
                 reasoningPanel?.isVisible = false
@@ -198,8 +272,7 @@ class MessagePanel(
                 if (i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
                     when (old) {
                         is Content -> {
-                            val component = getComponent(componentCount - 1)
-                            val editorPane = when (component) {
+                            val editorPane = when (val component = getComponent(componentCount - 1)) {
                                 is JEditorPane -> component
                                 is JBScrollPane if component.viewport.view is JEditorPane -> component.viewport.view as JEditorPane
                                 else -> throw IllegalStateException(
@@ -316,11 +389,10 @@ class MessagePanel(
                 }
             }
             reasoningHeaderButton = headerButton
-
             outerPanel.add(headerButton, BorderLayout.NORTH)
             outerPanel.add(contentPanel, BorderLayout.CENTER)
 
-            reasoningMessagePanel = MessagePanel(Message.fromAssistant(""), project, true, isTestMode).apply {
+            reasoningMessagePanel = ReasoningMessagePanel().apply {
                 background = outerPanel.background
                 border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
             }
@@ -377,8 +449,10 @@ class MessagePanel(
     private fun addNonCodeContent(markdown: String) {
         val globalScheme = EditorColorsManager.getInstance().globalScheme
         val functionDeclaration = TextAttributesKey.createTextAttributesKey("DEFAULT_FUNCTION_DECLARATION")
-        val codeColor =
-            globalScheme.getAttributes(functionDeclaration).foregroundColor ?: globalScheme.defaultForeground
+        val defaultForeground = globalScheme.defaultForeground
+        val textColor = if (isReasoningPanel) UIUtil.getLabelDisabledForeground() else defaultForeground
+        val codeColor = if (isReasoningPanel) UIUtil.getLabelDisabledForeground() else
+            globalScheme.getAttributes(functionDeclaration).foregroundColor ?: defaultForeground
         val outerPanelBackground = background
         val editorPane = JEditorPane().apply {
             editorKit = HTMLEditorKitBuilder.simple().apply {
@@ -399,6 +473,9 @@ class MessagePanel(
                             background-color: rgb(${outerPanelBackground.red}, ${outerPanelBackground.green}, ${outerPanelBackground.blue});
                             color: rgb(${codeColor.red}, ${codeColor.green}, ${codeColor.blue});
                             font-size: 0.9em;
+                        }
+                        body {
+                            color: rgb(${textColor.red}, ${textColor.green}, ${textColor.blue});
                         }
                     """.trimIndent()
                 )
