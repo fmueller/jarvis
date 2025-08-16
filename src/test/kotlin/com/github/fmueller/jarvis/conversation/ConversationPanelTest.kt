@@ -362,4 +362,19 @@ class ConversationPanelTest : BasePlatformTestCase() {
         val newCount = runInEdtAndGet { conversationPanel.panel.componentCount }
         assertTrue("Panel should have fewer components after removing the update panel", newCount < initialCount)
     }
+
+    fun `test scroll position remains during message generation`() {
+        val longText = (1..100).joinToString("\n") { "Line $it" }
+        val scrollBar = conversationPanel.scrollableContainer.verticalScrollBar
+        val initialValue = scrollBar.value
+
+        conversation.addToMessageBeingGenerated(longText)
+        waitForEDT()
+
+        assertEquals(
+            "Scroll position should remain unchanged during streaming",
+            initialValue,
+            scrollBar.value
+        )
+    }
 }
