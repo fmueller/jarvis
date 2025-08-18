@@ -354,4 +354,23 @@ class MessagePanelTest : BasePlatformTestCase() {
         // Should have one less component (removed the second code block)
         assertEquals(initialComponentCount - 1, messagePanel.componentCount)
     }
+
+    fun `test fadeInFinalMessage fades when faster than typing`() {
+        val longMessage = "a".repeat(100)
+        runInEdtAndGet {
+            messagePanel.message = Message.fromAssistant(longMessage)
+            messagePanel.fadeInFinalMessage()
+        }
+        assertEquals(longMessage, messagePanel.message.content)
+        assertEquals(0f, messagePanel.currentAlpha)
+    }
+
+    fun `test fadeInFinalMessage skips fade for short messages`() {
+        runInEdtAndGet {
+            messagePanel.message = Message.fromAssistant("Short")
+            messagePanel.fadeInFinalMessage()
+        }
+        assertEquals("Short", messagePanel.message.content)
+        assertEquals(1f, messagePanel.currentAlpha)
+    }
 }

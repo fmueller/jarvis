@@ -53,9 +53,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
                 SwingUtilities.invokeLater {
                     isUserScrolling = false
                     val newMessages = (it.newValue as? List<*>)?.filterIsInstance<Message>()
-                    if (newMessages == null) {
-                        throw IllegalStateException("Property 'messages' must be a list of messages")
-                    }
+                        ?: throw IllegalStateException("Property 'messages' must be a list of messages")
                     updateSmooth(newMessages)
                 }
             }
@@ -74,14 +72,10 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     }
 
     internal fun updateMessageInProgress(update: String) {
+        // currently, an empty update message is treated as a request to signal the finish of message generation
+        // TODO refactor this into a proper message object
         if (update.isEmpty()) {
-            updatePanel?.let {
-                panel.remove(it)
-                Disposer.dispose(it)
-                updatePanel = null
-                panel.revalidate()
-                panel.repaint()
-            }
+            updatePanel?.fadeInFinalMessage()
             return
         }
 
@@ -105,6 +99,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             messagePanels.forEach { Disposer.dispose(it) }
             messagePanels.clear()
             panel.removeAll()
+            Disposer.dispose { updatePanel }
             updatePanel = null
 
             messages.forEach { message ->
@@ -115,9 +110,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             }
         } else if (updatePanel != null && messages.size > existingMessageCount) {
             // Handle the case where we have an updatePanel that should become permanent
-            updatePanel!!.message = messages.last()
             messagePanels.add(updatePanel!!)
-            // Clear the updatePanel reference since it's now a permanent part of the conversation
             updatePanel = null
 
             val remainingMessages = messages.drop(currentComponentCount)

@@ -18,10 +18,10 @@ import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import org.jdesktop.swingx.VerticalLayout
 import org.jetbrains.annotations.VisibleForTesting
-import java.awt.BorderLayout
-import java.awt.Font
+import java.awt.*
 import java.util.regex.Pattern
 import javax.swing.*
+import kotlin.math.ceil
 
 class MessagePanel(
     initialMessage: Message,
@@ -35,6 +35,9 @@ class MessagePanel(
         private const val UPDATE_DELAY_MS = 100
         private const val MIN_CONTENT_CHANGE = 5
         private const val MIN_UPDATE_INTERVAL_MS = 50
+        private const val FADE_IN_DELAY_MS = 50
+        private const val FADE_IN_STEP = 0.1f
+        private const val TYPING_MS_PER_CHAR = UPDATE_DELAY_MS / MIN_CONTENT_CHANGE
 
         private val codeBlockPattern = Pattern.compile("`{2,}(\\w+)?\\n(.*?)\\n\\s*`{2,}", Pattern.DOTALL)
 
@@ -65,6 +68,10 @@ class MessagePanel(
     private var pendingMessage: Message? = null
     private var lastUpdateTime = 0L
     private var lastRenderedContentLength = 0
+
+    @VisibleForTesting
+    internal var currentAlpha = 1f
+    private var fadeTimer: Timer? = null
 
     sealed interface ParsedContent
     data class Content(val markdown: String) : ParsedContent
@@ -123,8 +130,19 @@ class MessagePanel(
         updatePanel(message)
     }
 
+    override fun paint(g: Graphics) {
+        val g2 = g as Graphics2D
+        val original = g2.composite
+        if (currentAlpha < 1f) {
+            g2.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, currentAlpha)
+        }
+        super.paint(g2)
+        g2.composite = original
+    }
+
     override fun dispose() {
         updateTimer.stop()
+        fadeTimer?.stop()
         parsed.clear()
         highlightedCodeHelper.disposeAllEditors()
         reasoningDotsTimer?.stop()
@@ -213,6 +231,38 @@ class MessagePanel(
         lastRenderedContentLength = messageToRender.content.length
         SwingUtilities.invokeLater {
             updatePanel(messageToRender)
+        }
+    }
+
+    /**
+     * Displays the message immediately and fades it in if fading is faster than the normal typing animation.
+     */
+    internal fun fadeInFinalMessage() {
+        updateTimer.stop()
+
+        val targetMessage = pendingMessage ?: message
+        val remainingContentLength = targetMessage.content.length - lastRenderedContentLength
+        val typingDurationMs = remainingContentLength * TYPING_MS_PER_CHAR
+        val fadeSteps = ceil(1f / FADE_IN_STEP).toInt()
+        val fadeDurationMs = fadeSteps * FADE_IN_DELAY_MS
+
+        if (fadeDurationMs < typingDurationMs) {
+            pendingMessage = null
+            currentAlpha = 0f
+            fadeTimer?.stop()
+            updatePanel(targetMessage)
+            fadeTimer = Timer(FADE_IN_DELAY_MS) {
+                currentAlpha = (currentAlpha + FADE_IN_STEP).coerceAtMost(1f)
+                repaint()
+                if (currentAlpha >= 1f) {
+                    fadeTimer?.stop()
+                }
+            }
+            fadeTimer?.start()
+        } else {
+            currentAlpha = 1f
+            fadeTimer?.stop()
+            repaint()
         }
     }
 

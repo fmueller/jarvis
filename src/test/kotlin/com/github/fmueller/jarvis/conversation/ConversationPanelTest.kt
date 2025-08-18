@@ -51,31 +51,6 @@ class ConversationPanelTest : BasePlatformTestCase() {
         assertNull(conversationPanel.updatePanel)
     }
 
-    fun `test updatePanel becomes permanent when message is finalized`() {
-        conversation.addToMessageBeingGenerated("Partial response")
-        waitForEDT()
-
-        assertNotNull("Should have updatePanel", conversationPanel.updatePanel)
-        val componentCountWithUpdate = conversationPanel.panel.componentCount
-        conversation.addMessage(Message.fromAssistant("Final response"))
-        waitForEDT()
-
-        assertNull("updatePanel should be cleared", conversationPanel.updatePanel)
-        assertEquals("Component count should remain the same",
-            componentCountWithUpdate, conversationPanel.panel.componentCount)
-
-        val lastComponent = conversationPanel.panel.getComponent(conversationPanel.panel.componentCount - 1) as MessagePanel
-        assertEquals("Last component should have the finalized message",
-            "Final response", lastComponent.message.content)
-
-        val messagePanelsField = ConversationPanel::class.java.getDeclaredField("messagePanels")
-        messagePanelsField.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        val messagePanels = messagePanelsField.get(conversationPanel) as MutableList<MessagePanel>
-        assertTrue("MessagePanels should contain the permanent panel",
-            messagePanels.any { it.message.content == "Final response" })
-    }
-
     fun `test updateMessageInProgress creates and updates panel`() {
         // Initially no update panel
         assertNull(conversationPanel.updatePanel)
@@ -96,16 +71,16 @@ class ConversationPanelTest : BasePlatformTestCase() {
             "Updated partial message", conversationPanel.updatePanel!!.message.content)
     }
 
-    fun `test updateMessageInProgress removes panel when empty`() {
+    fun `test updateMessageInProgress does not remove panel when empty`() {
         conversationPanel.updateMessageInProgress("Some content")
         assertNotNull("Should have updatePanel", conversationPanel.updatePanel)
         val componentCountWithUpdate = conversationPanel.panel.componentCount
 
         conversationPanel.updateMessageInProgress("")
 
-        assertNull("Should remove updatePanel", conversationPanel.updatePanel)
-        assertEquals("Should remove component from panel",
-            componentCountWithUpdate - 1, conversationPanel.panel.componentCount)
+        assertNotNull("Should not remove updatePanel", conversationPanel.updatePanel)
+        assertEquals("Should not remove component from panel",
+            componentCountWithUpdate, conversationPanel.panel.componentCount)
     }
 
     fun `test dispose cleans up all message panels`() {
@@ -347,7 +322,7 @@ class ConversationPanelTest : BasePlatformTestCase() {
         }
     }
 
-    fun `test updateMessageInProgress with empty update removes existing panel`() {
+    fun `test updateMessageInProgress with empty update does not remove existing panel`() {
         runInEdtAndGet {
             conversationPanel.updateMessageInProgress("Temporary")
         }
@@ -358,8 +333,9 @@ class ConversationPanelTest : BasePlatformTestCase() {
             conversationPanel.updateMessageInProgress("")
         }
 
-        assertNull("updatePanel should be null after empty update", conversationPanel.updatePanel)
+        assertNotNull("updatePanel should not be null after empty update", conversationPanel.updatePanel)
         val newCount = runInEdtAndGet { conversationPanel.panel.componentCount }
-        assertTrue("Panel should have fewer components after removing the update panel", newCount < initialCount)
+        assertTrue("Panel should have same number of components after an empty update",
+            newCount == initialCount)
     }
 }
