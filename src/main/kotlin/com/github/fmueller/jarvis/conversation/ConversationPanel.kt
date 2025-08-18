@@ -54,9 +54,7 @@ class ConversationPanel(conversation: Conversation, private val project: Project
                 SwingUtilities.invokeLater {
                     isUserScrolling = false
                     val newMessages = (it.newValue as? List<*>)?.filterIsInstance<Message>()
-                    if (newMessages == null) {
-                        throw IllegalStateException("Property 'messages' must be a list of messages")
-                    }
+                        ?: throw IllegalStateException("Property 'messages' must be a list of messages")
                     updateSmooth(newMessages)
                 }
             }
@@ -75,19 +73,13 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     }
 
     internal fun updateMessageInProgress(update: String) {
+        // currently, an empty update message is treated as a request to signal the finish of message generation
+        // TODO refactor this into a proper message object
         if (update.isEmpty()) {
-            updatePanel?.let {
-                panel.remove(it)
-                Disposer.dispose(it)
-                updatePanel = null
-                panel.revalidate()
-                panel.repaint()
-            }
-            shouldFadeNextMessage = true
+            updatePanel?.fadeInFinalMessage()
             return
         }
 
-        shouldFadeNextMessage = false
         if (updatePanel == null) {
             updatePanel = MessagePanel.create(Message.fromAssistant(update), project)
             Disposer.register(this, updatePanel!!)
@@ -108,8 +100,8 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             messagePanels.forEach { Disposer.dispose(it) }
             messagePanels.clear()
             panel.removeAll()
+            Disposer.dispose { updatePanel }
             updatePanel = null
-            shouldFadeNextMessage = false
 
             messages.forEach { message ->
                 val messagePanel = MessagePanel.create(message, project)
@@ -119,11 +111,8 @@ class ConversationPanel(conversation: Conversation, private val project: Project
             }
         } else if (updatePanel != null && messages.size > existingMessageCount) {
             // Handle the case where we have an updatePanel that should become permanent
-            updatePanel!!.fadeInFinalMessage(messages.last())
             messagePanels.add(updatePanel!!)
-            // Clear the updatePanel reference since it's now a permanent part of the conversation
             updatePanel = null
-            shouldFadeNextMessage = false
 
             val remainingMessages = messages.drop(currentComponentCount)
             remainingMessages.forEach { message ->
@@ -135,12 +124,8 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         } else {
             // Handle normal case where new messages are added
             val messagesToAdd = messages.drop(existingMessageCount)
-            messagesToAdd.forEachIndexed { index, message ->
+            messagesToAdd.forEach { message ->
                 val messagePanel = MessagePanel.create(message, project)
-                if (shouldFadeNextMessage && index == 0 && message.role == Role.ASSISTANT) {
-                    messagePanel.fadeInFinalMessage()
-                    shouldFadeNextMessage = false
-                }
                 Disposer.register(this, messagePanel)
                 messagePanels.add(messagePanel)
                 panel.add(messagePanel)

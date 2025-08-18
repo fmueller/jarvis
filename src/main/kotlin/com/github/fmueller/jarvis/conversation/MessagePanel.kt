@@ -18,11 +18,7 @@ import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import org.jdesktop.swingx.VerticalLayout
 import org.jetbrains.annotations.VisibleForTesting
-import java.awt.AlphaComposite
-import java.awt.BorderLayout
-import java.awt.Font
-import java.awt.Graphics
-import java.awt.Graphics2D
+import java.awt.*
 import java.util.regex.Pattern
 import javax.swing.*
 import kotlin.math.ceil
@@ -39,7 +35,7 @@ class MessagePanel(
         private const val UPDATE_DELAY_MS = 100
         private const val MIN_CONTENT_CHANGE = 5
         private const val MIN_UPDATE_INTERVAL_MS = 50
-        private const val FADE_IN_DELAY_MS = 30
+        private const val FADE_IN_DELAY_MS = 50
         private const val FADE_IN_STEP = 0.1f
         private const val TYPING_MS_PER_CHAR = UPDATE_DELAY_MS / MIN_CONTENT_CHANGE
 
@@ -72,6 +68,7 @@ class MessagePanel(
     private var pendingMessage: Message? = null
     private var lastUpdateTime = 0L
     private var lastRenderedContentLength = 0
+
     @VisibleForTesting
     internal var currentAlpha = 1f
     private var fadeTimer: Timer? = null
@@ -180,25 +177,22 @@ class MessagePanel(
     }
 
     /**
-     * Displays the provided message immediately and fades it in if fading is faster than the normal typing animation.
+     * Displays the message immediately and fades it in if fading is faster than the normal typing animation.
      */
-    internal fun fadeInFinalMessage(finalMessage: Message? = null) {
+    internal fun fadeInFinalMessage() {
         updateTimer.stop()
-        pendingMessage = null
 
-        finalMessage?.let {
-            _message = it
-            updatePanel(it)
-        }
-
-        val targetMessage = finalMessage ?: _message
-        val typingDurationMs = targetMessage.content.length * TYPING_MS_PER_CHAR
+        val targetMessage = pendingMessage ?: message
+        val remainingContentLength = targetMessage.content.length - lastRenderedContentLength
+        val typingDurationMs = remainingContentLength * TYPING_MS_PER_CHAR
         val fadeSteps = ceil(1f / FADE_IN_STEP).toInt()
         val fadeDurationMs = fadeSteps * FADE_IN_DELAY_MS
 
         if (fadeDurationMs < typingDurationMs) {
+            pendingMessage = null
             currentAlpha = 0f
             fadeTimer?.stop()
+            updatePanel(targetMessage)
             fadeTimer = Timer(FADE_IN_DELAY_MS) {
                 currentAlpha = (currentAlpha + FADE_IN_STEP).coerceAtMost(1f)
                 repaint()

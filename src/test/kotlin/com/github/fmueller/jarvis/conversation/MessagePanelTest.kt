@@ -342,7 +342,8 @@ class MessagePanelTest : BasePlatformTestCase() {
     fun `test fadeInFinalMessage fades when faster than typing`() {
         val longMessage = "a".repeat(100)
         runInEdtAndGet {
-            messagePanel.fadeInFinalMessage(Message.fromAssistant(longMessage))
+            messagePanel.message = Message.fromAssistant(longMessage)
+            messagePanel.fadeInFinalMessage()
         }
         assertEquals(longMessage, messagePanel.message.content)
         assertEquals(0f, messagePanel.currentAlpha)
@@ -350,7 +351,8 @@ class MessagePanelTest : BasePlatformTestCase() {
 
     fun `test fadeInFinalMessage skips fade for short messages`() {
         runInEdtAndGet {
-            messagePanel.fadeInFinalMessage(Message.fromAssistant("Short"))
+            messagePanel.message = Message.fromAssistant("Short")
+            messagePanel.fadeInFinalMessage()
         }
         assertEquals("Short", messagePanel.message.content)
         assertEquals(1f, messagePanel.currentAlpha)
