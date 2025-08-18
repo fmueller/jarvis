@@ -19,7 +19,6 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     internal var updatePanel: MessagePanel? = null
 
     private val messagePanels = mutableListOf<MessagePanel>()
-    private var shouldFadeNextMessage = false
 
     // we are exposing the scrollable container here and keep it in the panel
     // because we need to adjust the scroll position when new messages are added
