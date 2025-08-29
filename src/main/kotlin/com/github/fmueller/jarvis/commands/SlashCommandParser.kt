@@ -3,7 +3,8 @@ package com.github.fmueller.jarvis.commands
 object SlashCommandParser {
 
     fun parse(message: String): SlashCommand {
-        val trimmedMessage = message.trim().lowercase()
+        val trimmed = message.trim()
+        val trimmedMessage = trimmed.lowercase()
         if (trimmedMessage == "/help" || trimmedMessage == "/?") {
             return HelpCommand()
         }
@@ -18,6 +19,26 @@ object SlashCommandParser {
 
         if (trimmedMessage == "/model" || trimmedMessage == "/model-info") {
             return ModelCommand()
+        }
+
+        if (trimmedMessage.startsWith("/model set")) {
+            val paramsPart = trimmed.removePrefix("/model set").trim()
+            val tokens = paramsPart.split(" ")
+            val params = mutableMapOf<String, String>()
+            var i = 0
+            while (i < tokens.size) {
+                val token = tokens[i]
+                if (token.startsWith("-")) {
+                    val value = tokens.getOrNull(i + 1)
+                    if (value != null && !value.startsWith("-")) {
+                        params[token.removePrefix("-")] = value
+                        i += 2
+                        continue
+                    }
+                }
+                i++
+            }
+            return ModelSetCommand(params)
         }
 
         if (trimmedMessage.startsWith("/model ")) {

@@ -34,6 +34,11 @@ class SlashCommandParserTest : TestCase() {
         assertTrue(command is ModelCommand)
     }
 
+    fun `test parse model set returns ModelSetCommand`() {
+        val command = SlashCommandParser.parse("/model set -temperature 1.0")
+        assertTrue(command is ModelSetCommand)
+    }
+
     fun `test parse host returns HostCommand`() {
         val command = SlashCommandParser.parse("/host http://1.2.3.4")
         assertTrue(command is HostCommand)
