@@ -12,6 +12,7 @@
 
 - Do not fail CI cache cleanup when no cache is found
 - Use configured context window size for chat memory token limit
+- Avoid auto-scrolling during streamed responses
 
 ### Changed
 
