@@ -8,7 +8,8 @@
 
 <!-- Plugin description -->
 Jarvis is an LLM-powered developer plugin for the JetBrains IDE platform. It aims to support developers by leveraging
-local LLMs only. To achieve this, it is integrating with Ollama.
+local LLMs only. To achieve this, it is integrating with Ollama. Jarvis keeps the currently used model in memory for
+five minutes to reduce loading times.
 <!-- Plugin description end -->
 
 ## Installation
