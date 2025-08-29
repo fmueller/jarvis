@@ -1,14 +1,12 @@
 package com.github.fmueller.jarvis.conversation
 
+import com.github.fmueller.jarvis.ui.EditorPaneHelper
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.util.ui.HTMLEditorKitBuilder
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
@@ -497,45 +495,7 @@ class MessagePanel(
     }
 
     private fun addNonCodeContent(markdown: String) {
-        val globalScheme = EditorColorsManager.getInstance().globalScheme
-        val functionDeclaration = TextAttributesKey.createTextAttributesKey("DEFAULT_FUNCTION_DECLARATION")
-        val defaultForeground = globalScheme.defaultForeground
-        val textColor = if (isReasoningPanel) UIUtil.getLabelDisabledForeground() else defaultForeground
-        val codeColor = if (isReasoningPanel) UIUtil.getLabelDisabledForeground() else
-            globalScheme.getAttributes(functionDeclaration).foregroundColor ?: defaultForeground
-        val outerPanelBackground = background
-        val editorPane = JEditorPane().apply {
-            editorKit = HTMLEditorKitBuilder.simple().apply {
-                styleSheet.addRule(
-                    """
-                        p {
-                            margin: 4px 0;
-                        }
-                        ul, ol {
-                            margin-top: 4px;
-                            margin-bottom: 8px;
-                        }
-                        h1, h2, h3, h4, h5, h6 {
-                            margin-top: 8px;
-                            margin-bottom: 0;
-                        }
-                        code {
-                            background-color: rgb(${outerPanelBackground.red}, ${outerPanelBackground.green}, ${outerPanelBackground.blue});
-                            color: rgb(${codeColor.red}, ${codeColor.green}, ${codeColor.blue});
-                            font-size: 0.9em;
-                        }
-                        body {
-                            color: rgb(${textColor.red}, ${textColor.green}, ${textColor.blue});
-                        }
-                    """.trimIndent()
-                )
-            }
-            text = markdownToHtml(markdown)
-            isEditable = false
-            background = outerPanelBackground
-            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
-        }
-        add(editorPane)
+        add(EditorPaneHelper.createMarkdownPane(markdown, background))
     }
 
     private fun addHighlightedCode(languageId: String, code: String) {
