@@ -156,8 +156,7 @@ class MessagePanel(
             val fm = button.getFontMetrics(button.font)
             val maxWidth = fm.stringWidth("Reasoning…")
             val currentSize = button.preferredSize
-            button.preferredSize =
-                java.awt.Dimension(maxWidth + button.insets.left + button.insets.right, currentSize.height)
+            button.preferredSize = Dimension(maxWidth + button.insets.left + button.insets.right, currentSize.height)
         }
 
         var count = 0
@@ -183,8 +182,7 @@ class MessagePanel(
             val fm = button.getFontMetrics(button.font)
             val originalWidth = fm.stringWidth("Reasoning")
             val currentSize = button.preferredSize
-            button.preferredSize =
-                java.awt.Dimension(originalWidth + button.insets.left + button.insets.right, currentSize.height)
+            button.preferredSize = Dimension(originalWidth + button.insets.left + button.insets.right, currentSize.height)
         }
     }
 
@@ -282,7 +280,7 @@ class MessagePanel(
                             ?: UIUtil.getPanelBackground()
                         border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
                     }
-                    reasoningContentPanel?.add(reasoningMessagePanel, BorderLayout.CENTER)
+                    reasoningContentPanel?.add(reasoningMessagePanel!!, BorderLayout.CENTER)
                 }
                 reasoningMessagePanel?.update(reasoning)
                 if (reasoning.isInProgress) {
