@@ -7,6 +7,7 @@ import com.github.fmueller.jarvis.conversation.Message
 import com.intellij.lang.Language
 import dev.langchain4j.memory.chat.TokenWindowChatMemory
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
+import dev.langchain4j.model.ollama.OllamaChatRequestParameters
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
 import kotlinx.coroutines.*
@@ -442,6 +443,11 @@ object OllamaService {
                     .baseUrl(host)
                     .modelName(modelName)
                     .numCtx(contextWindowSize)
+                    .defaultRequestParameters(
+                        OllamaChatRequestParameters.builder()
+                            .keepAlive(Duration.ofMinutes(5).toSeconds().toInt())
+                            .build()
+                    )
                     .build()
             )
             .systemMessageProvider { chatMemoryId -> systemPrompt }
