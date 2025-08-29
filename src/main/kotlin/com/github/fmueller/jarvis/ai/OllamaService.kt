@@ -6,6 +6,7 @@ import com.github.fmueller.jarvis.conversation.Conversation
 import com.github.fmueller.jarvis.conversation.Message
 import com.intellij.lang.Language
 import dev.langchain4j.memory.chat.TokenWindowChatMemory
+import dev.langchain4j.model.chat.request.DefaultChatRequestParameters
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
@@ -142,6 +143,7 @@ object OllamaService {
     var modelName: String = DEFAULT_MODEL_NAME
         set(value) {
             field = value
+            resetParameters()
             assistant = createAiService()
         }
 
@@ -154,10 +156,137 @@ object OllamaService {
             assistant = createAiService()
         }
 
+    var temperature: Double = 0.7
+
+    var topP: Double = 0.9
+
+    var topK: Int = 40
+
+    var maxTokens: Int? = null
+
+    var repeatPenalty: Double = 1.1
+
+    var seed: Int? = null
+
+    var stopSequences: List<String> = emptyList()
+
+    var presencePenalty: Double? = null
+
+    var frequencyPenalty: Double? = null
+
+    private fun resetParameters() {
+        temperature = 0.7
+        topP = 0.9
+        topK = 40
+        maxTokens = null
+        repeatPenalty = 1.1
+        seed = null
+        stopSequences = emptyList()
+        presencePenalty = null
+        frequencyPenalty = null
+    }
+
     private var assistant = createAiService()
 
     fun clearChatMemory() {
         assistant = createAiService()
+    }
+
+    fun setParameter(name: String, value: String): String? {
+        return when (name.lowercase()) {
+            "temperature", "t" -> {
+                val v = value.toDoubleOrNull()
+                if (v != null && v in 0.0..2.0) {
+                    temperature = v
+                    null
+                } else {
+                    "temperature must be between 0.0 and 2.0"
+                }
+            }
+            "top_p", "p" -> {
+                val v = value.toDoubleOrNull()
+                if (v != null && v in 0.0..1.0) {
+                    topP = v
+                    null
+                } else {
+                    "top_p must be between 0.0 and 1.0"
+                }
+            }
+            "top_k", "k" -> {
+                val v = value.toIntOrNull()
+                if (v != null && v in 1..100) {
+                    topK = v
+                    null
+                } else {
+                    "top_k must be between 1 and 100"
+                }
+            }
+            "max_tokens", "m" -> {
+                val v = value.toIntOrNull()
+                if (v != null && v in 1..4096) {
+                    maxTokens = v
+                    null
+                } else {
+                    "max_tokens must be between 1 and 4096"
+                }
+            }
+            "repeat_penalty", "r" -> {
+                val v = value.toDoubleOrNull()
+                if (v != null && v in 0.0..2.0) {
+                    repeatPenalty = v
+                    null
+                } else {
+                    "repeat_penalty must be between 0.0 and 2.0"
+                }
+            }
+            "seed", "s" -> {
+                val v = value.toIntOrNull()
+                if (v != null) {
+                    seed = v
+                    null
+                } else {
+                    "seed must be an integer"
+                }
+            }
+            "num_ctx", "c" -> {
+                val v = value.toIntOrNull()
+                if (v != null && v in 512..32768) {
+                    contextWindowSize = v
+                    null
+                } else {
+                    "num_ctx must be between 512 and 32768"
+                }
+            }
+            "stop" -> {
+                stopSequences = value.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                null
+            }
+            "presence_penalty", "pp" -> "presence_penalty is not supported"
+            "frequency_penalty", "fp" -> "frequency_penalty is not supported"
+            else -> "unsupported parameter $name"
+        }
+    }
+
+    fun getParametersInfo(): String {
+        val result = StringBuilder()
+        result.append("  Inference parameters\n")
+        result.append("    temperature        $temperature    Controls randomness\n")
+        result.append("    top_p              $topP    Nucleus sampling threshold\n")
+        result.append("    top_k              $topK    Limits token candidates\n")
+        result.append("    max_tokens         ${maxTokens ?: "default"}    Maximum output tokens\n")
+        result.append("    repeat_penalty     $repeatPenalty    Prevents repetition\n")
+        result.append("    seed               ${seed ?: "random"}    For reproducible outputs\n")
+        result.append("    num_ctx            $contextWindowSize    Context window size\n")
+        if (stopSequences.isNotEmpty()) {
+            result.append("    stop               ${stopSequences.joinToString()}    Stop sequences\n")
+        }
+        result.append(
+            "    presence_penalty   ${presencePenalty ?: 0.0}    Penalizes repeated topics\n",
+        )
+        result.append(
+            "    frequency_penalty  ${frequencyPenalty ?: 0.0}    Penalizes token frequency",
+        )
+        return result.toString()
     }
 
     /**
@@ -177,7 +306,9 @@ object OllamaService {
 
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
             if (response.statusCode() == 200) {
-                formatModelInfo(response.body())
+                val info = formatModelInfo(response.body())
+                val params = getParametersInfo()
+                "$info\n\n$params"
             } else {
                 "Model info request failed: status ${response.statusCode()}"
             }
@@ -433,6 +564,17 @@ object OllamaService {
     private fun createAiService(): Assistant {
         cancelCurrentRequest()
         currentInferenceClient = CancellableHttpClient()
+        val paramsBuilder = DefaultChatRequestParameters.builder()
+            .temperature(temperature)
+            .topP(topP)
+            .topK(topK)
+            .maxOutputTokens(maxTokens)
+            .presencePenalty(presencePenalty)
+            .frequencyPenalty(frequencyPenalty)
+        if (stopSequences.isNotEmpty()) {
+            paramsBuilder.stopSequences(stopSequences)
+        }
+        val defaultParams = paramsBuilder.build()
         return AiServices
             .builder(Assistant::class.java)
             .streamingChatModel(
@@ -442,6 +584,9 @@ object OllamaService {
                     .baseUrl(host)
                     .modelName(modelName)
                     .numCtx(contextWindowSize)
+                    .repeatPenalty(repeatPenalty)
+                    .seed(seed)
+                    .defaultRequestParameters(defaultParams)
                     .build()
             )
             .systemMessageProvider { chatMemoryId -> systemPrompt }
