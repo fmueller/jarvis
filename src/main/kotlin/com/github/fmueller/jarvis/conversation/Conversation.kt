@@ -108,7 +108,7 @@ data class Message(
         return text.lines().joinToString("\n") { line ->
             val trimmed = line.trimStart()
             if (trimmed.startsWith("``") && !trimmed.startsWith("```") && !trimmed.startsWith("````")) {
-                val indent = line.substring(0, line.length - trimmed.length)
+                val indent = line.dropLast(trimmed.length)
                 indent + "```" + trimmed.drop(2)
             } else {
                 line
