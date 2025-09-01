@@ -8,6 +8,7 @@
 - Configurable context window size when calling Ollama
 - `/model` shows model info when no name is supplied and new `/model-info` command
 - `/model set` command to configure inference parameters
+- Keep the current Ollama model in memory for five minutes
 
 ### Fixed
 

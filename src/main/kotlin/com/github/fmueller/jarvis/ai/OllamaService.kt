@@ -8,6 +8,7 @@ import com.intellij.lang.Language
 import dev.langchain4j.memory.chat.TokenWindowChatMemory
 import dev.langchain4j.model.chat.request.DefaultChatRequestParameters
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel
+import dev.langchain4j.model.ollama.OllamaChatRequestParameters
 import dev.langchain4j.service.AiServices
 import dev.langchain4j.service.TokenStream
 import kotlinx.coroutines.*
@@ -587,6 +588,11 @@ object OllamaService {
                     .repeatPenalty(repeatPenalty)
                     .seed(seed)
                     .defaultRequestParameters(defaultParams)
+                    .defaultRequestParameters(
+                        OllamaChatRequestParameters.builder()
+                            .keepAlive(Duration.ofMinutes(5).toSeconds().toInt())
+                            .build()
+                    )
                     .build()
             )
             .systemMessageProvider { chatMemoryId -> systemPrompt }
