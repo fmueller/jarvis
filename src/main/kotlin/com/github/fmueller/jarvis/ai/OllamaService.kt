@@ -263,21 +263,19 @@ object OllamaService {
 
     fun getParametersInfo(): String {
         val result = StringBuilder()
-        result.append("  Inference parameters\n")
-        result.append("    temperature        $temperature    Controls randomness\n")
-        result.append("    top_p              $topP    Nucleus sampling threshold\n")
-        result.append("    top_k              $topK    Limits token candidates\n")
-        result.append("    max_tokens         ${maxTokens ?: "default"}    Maximum output tokens\n")
-        result.append("    repeat_penalty     $repeatPenalty    Prevents repetition\n")
-        result.append("    seed               ${seed ?: "random"}    For reproducible outputs\n")
-        result.append("    num_ctx            $contextWindowSize    Context window size\n")
+        result.append("### Inference parameters\n")
+        result.append("- **temperature:** $temperature — Controls randomness\n")
+        result.append("- **top_p:** $topP — Nucleus sampling threshold\n")
+        result.append("- **top_k:** $topK — Limits token candidates\n")
+        result.append("- **max_tokens:** ${maxTokens ?: "default"} — Maximum output tokens\n")
+        result.append("- **repeat_penalty:** $repeatPenalty — Prevents repetition\n")
+        result.append("- **seed:** ${seed ?: "random"} — For reproducible outputs\n")
+        result.append("- **num_ctx:** $contextWindowSize — Context window size\n")
+        result.append("- **presence_penalty:** ${presencePenalty ?: 0.0} — Penalizes repeated topics\n")
         result.append(
-            "    presence_penalty   ${presencePenalty ?: 0.0}    Penalizes repeated topics\n",
+            "- **frequency_penalty:** ${frequencyPenalty ?: 0.0} — Penalizes token frequency\n",
         )
-        result.append(
-            "    frequency_penalty  ${frequencyPenalty ?: 0.0}    Penalizes token frequency",
-        )
-        return result.toString()
+        return result.toString().trimEnd()
     }
 
     /**
@@ -314,26 +312,23 @@ object OllamaService {
             val result = StringBuilder()
 
             // Model section
-            result.append(" Model\n")
+            result.append("### Model\n")
             json["details"]?.jsonObject?.let { details ->
                 details["family"]?.jsonPrimitive?.content?.let {
-                    result.append("    architecture        $it\n")
+                    result.append("- **architecture:** $it\n")
                 }
                 details["parameter_size"]?.jsonPrimitive?.content?.let {
-                    result.append("    parameters          $it\n")
+                    result.append("- **parameters:** $it\n")
                 }
                 details["quantization_level"]?.jsonPrimitive?.content?.let {
-                    result.append("    quantization        $it\n")
+                    result.append("- **quantization:** $it\n")
                 }
             }
 
-            result.append("\n")
-
-            // Parameters section
-            result.append("  Parameters\n")
+            result.append("\n### Parameters\n")
 
             json["model_info"]?.jsonObject?.get("llama.context_length")?.jsonPrimitive?.content?.let { contextLength ->
-                result.append("    context length      $contextLength\n")
+                result.append("- **context length:** $contextLength\n")
             }
 
             json["parameters"]?.let { params ->
@@ -343,18 +338,17 @@ object OllamaService {
                     parametersText.lines().forEach { line ->
                         val trimmedLine = line.trim()
                         if (trimmedLine.isNotEmpty()) {
-                            result.append("    $trimmedLine\n")
+                            result.append("- $trimmedLine\n")
                         }
                     }
                 }
             }
 
-            result.append("\n")
-
             // License section (if available)
             json["license"]?.jsonPrimitive?.content?.let { license ->
-                result.append("  License\n")
-                result.append("    ${license.lines().first()}")
+                result.append("\n### License\n")
+                result.append(license.lines().first())
+                result.append("\n")
             }
 
             result.toString().trimEnd()

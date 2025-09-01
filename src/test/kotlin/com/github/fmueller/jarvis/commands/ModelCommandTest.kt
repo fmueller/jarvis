@@ -58,8 +58,8 @@ class ModelCommandTest : TestCase() {
             server.stop(0)
         }
         val content = conversation.messages.last().content
-        assertTrue(content.startsWith(" Model\n\n  Parameters"))
-        assertTrue(content.contains("Inference parameters"))
+        assertTrue(content.startsWith("### Model\n\n### Parameters"))
+        assertTrue(content.contains("### Inference parameters"))
         assertEquals(Role.INFO, conversation.messages.last().role)
     }
 }
