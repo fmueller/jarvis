@@ -565,7 +565,9 @@ object OllamaService {
     private fun createAiService(): Assistant {
         cancelCurrentRequest()
         currentInferenceClient = CancellableHttpClient()
-        val paramsBuilder = DefaultChatRequestParameters.builder()
+
+        val paramsBuilder = OllamaChatRequestParameters.builder()
+            .keepAlive(Duration.ofMinutes(5).toSeconds().toInt())
             .temperature(temperature)
             .topP(topP)
             .topK(topK)
@@ -575,7 +577,7 @@ object OllamaService {
         if (stopSequences.isNotEmpty()) {
             paramsBuilder.stopSequences(stopSequences)
         }
-        val defaultParams = paramsBuilder.build()
+
         return AiServices
             .builder(Assistant::class.java)
             .streamingChatModel(
@@ -587,12 +589,7 @@ object OllamaService {
                     .numCtx(contextWindowSize)
                     .repeatPenalty(repeatPenalty)
                     .seed(seed)
-                    .defaultRequestParameters(defaultParams)
-                    .defaultRequestParameters(
-                        OllamaChatRequestParameters.builder()
-                            .keepAlive(Duration.ofMinutes(5).toSeconds().toInt())
-                            .build()
-                    )
+                    .defaultRequestParameters(paramsBuilder.build())
                     .build()
             )
             .systemMessageProvider { chatMemoryId -> systemPrompt }
