@@ -347,7 +347,7 @@ object OllamaService {
             // License section (if available)
             json["license"]?.jsonPrimitive?.content?.let { license ->
                 result.append("\n### License\n")
-                result.append(license.lines().first())
+                result.append(license.lines().first().trim())
                 result.append("\n")
             }
 
