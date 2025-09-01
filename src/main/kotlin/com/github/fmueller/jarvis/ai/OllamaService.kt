@@ -169,8 +169,6 @@ object OllamaService {
 
     var seed: Int? = null
 
-    var stopSequences: List<String> = emptyList()
-
     var presencePenalty: Double? = null
 
     var frequencyPenalty: Double? = null
@@ -182,7 +180,6 @@ object OllamaService {
         maxTokens = null
         repeatPenalty = 1.1
         seed = null
-        stopSequences = emptyList()
         presencePenalty = null
         frequencyPenalty = null
     }
@@ -258,10 +255,6 @@ object OllamaService {
                     "num_ctx must be between 512 and 32768"
                 }
             }
-            "stop" -> {
-                stopSequences = value.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                null
-            }
             "presence_penalty", "pp" -> "presence_penalty is not supported"
             "frequency_penalty", "fp" -> "frequency_penalty is not supported"
             else -> "unsupported parameter $name"
@@ -278,9 +271,6 @@ object OllamaService {
         result.append("    repeat_penalty     $repeatPenalty    Prevents repetition\n")
         result.append("    seed               ${seed ?: "random"}    For reproducible outputs\n")
         result.append("    num_ctx            $contextWindowSize    Context window size\n")
-        if (stopSequences.isNotEmpty()) {
-            result.append("    stop               ${stopSequences.joinToString()}    Stop sequences\n")
-        }
         result.append(
             "    presence_penalty   ${presencePenalty ?: 0.0}    Penalizes repeated topics\n",
         )
@@ -574,9 +564,6 @@ object OllamaService {
             .maxOutputTokens(maxTokens)
             .presencePenalty(presencePenalty)
             .frequencyPenalty(frequencyPenalty)
-        if (stopSequences.isNotEmpty()) {
-            paramsBuilder.stopSequences(stopSequences)
-        }
 
         return AiServices
             .builder(Assistant::class.java)
