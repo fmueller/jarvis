@@ -18,6 +18,7 @@
 ### Changed
 
 - Fade in completed LLM responses only when faster than the normal typing animation
+- Format model info and parameter messages in Markdown for improved readability
 
 ## [1.7.3] - 2025-07-03
 
