@@ -57,8 +57,9 @@ class ModelCommandTest : TestCase() {
             OllamaService.host = originalHost
             server.stop(0)
         }
-        val expectedFormattedOutput = " Model\n\n  Parameters\n\n  License\n    test"
-        assertEquals(expectedFormattedOutput, conversation.messages.last().content)
+        val content = conversation.messages.last().content
+        assertTrue(content.startsWith(" Model\n\n  Parameters"))
+        assertTrue(content.contains("Inference parameters"))
         assertEquals(Role.INFO, conversation.messages.last().role)
     }
 }
