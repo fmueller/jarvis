@@ -1,14 +1,12 @@
 package com.github.fmueller.jarvis.conversation
 
+import com.github.fmueller.jarvis.ui.EditorPaneHelper
 import com.github.fmueller.jarvis.ui.SyntaxHighlightedCodeHelper
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.editor.colors.EditorColorsManager
-import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.util.ui.HTMLEditorKitBuilder
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
@@ -25,7 +23,7 @@ import kotlin.math.ceil
 
 class MessagePanel(
     initialMessage: Message,
-    private val project: Project,
+    project: Project,
     private val isReasoningPanel: Boolean = false,
     private val isTestMode: Boolean = false
 ) : JPanel(), Disposable {
@@ -88,7 +86,11 @@ class MessagePanel(
     private var hasReasoningContent = false
 
     @VisibleForTesting
-    var reasoningMessagePanel: MessagePanel? = null
+    var reasoningMessagePanel: ReasoningMessagePanel? = null
+
+    private var reasoningDotsTimer: Timer? = null
+    @VisibleForTesting
+    var reasoningStartTimeMs: Long = 0L
 
     private var isReasoningExpanded: Boolean = false
         set(value) {
@@ -99,6 +101,8 @@ class MessagePanel(
             } else {
                 com.intellij.icons.AllIcons.General.ArrowRight
             }
+            // Pass expansion state to reasoning panel
+            reasoningMessagePanel?.setExpanded(value)
         }
 
     private var _message: Message = initialMessage
@@ -139,8 +143,58 @@ class MessagePanel(
         fadeTimer?.stop()
         parsed.clear()
         highlightedCodeHelper.disposeAllEditors()
+        reasoningDotsTimer?.stop()
         reasoningMessagePanel?.dispose()
         hasReasoningContent = false
+    }
+
+    private fun startReasoningDots() {
+        if (reasoningDotsTimer != null) return
+
+        // Reserve width for the largest state to prevent jitter
+        reasoningHeaderButton?.let { button ->
+            val fm = button.getFontMetrics(button.font)
+            val maxWidth = fm.stringWidth("Reasoning…")
+            val currentSize = button.preferredSize
+            button.preferredSize = Dimension(maxWidth + button.insets.left + button.insets.right, currentSize.height)
+        }
+
+        var count = 0
+        reasoningDotsTimer = Timer(450) {
+            val dots = when (count) {
+                0 -> "."
+                1 -> ".."
+                2 -> "…"
+                else -> ""
+            }
+            reasoningHeaderButton?.text = "Reasoning$dots"
+            count = (count + 1) % 4
+        }.apply { start() }
+    }
+
+    private fun stopReasoningDots() {
+        reasoningDotsTimer?.stop()
+        reasoningDotsTimer = null
+        reasoningHeaderButton?.text = "Reasoning"
+
+        // Restore original width
+        reasoningHeaderButton?.let { button ->
+            val fm = button.getFontMetrics(button.font)
+            val originalWidth = fm.stringWidth("Reasoning")
+            val currentSize = button.preferredSize
+            button.preferredSize = Dimension(originalWidth + button.insets.left + button.insets.right, currentSize.height)
+        }
+    }
+
+    private fun formatDuration(durationMs: Long): String {
+        val totalSeconds = durationMs / 1000
+        val minutes = totalSeconds / 60
+        val seconds = (totalSeconds % 60).toInt()
+        return if (minutes > 0) {
+            String.format("%d minutes and %02d seconds", minutes, seconds)
+        } else {
+            String.format("%d seconds", seconds)
+        }
     }
 
     private fun scheduleSmartUpdate(newMessage: Message) {
@@ -221,11 +275,27 @@ class MessagePanel(
                 hasReasoningContent = true
                 reasoningPanel?.isVisible = true
                 if (reasoningMessagePanel == null) {
-                    reasoningMessagePanel = MessagePanel(Message.fromAssistant(reasoning.markdown), project, true, isTestMode)
-                } else {
-                    reasoningMessagePanel?.message = Message.fromAssistant(reasoning.markdown)
+                    reasoningMessagePanel = ReasoningMessagePanel().apply {
+                        background = reasoningPanel?.background
+                            ?: UIUtil.getPanelBackground()
+                        border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
+                    }
+                    reasoningContentPanel?.add(reasoningMessagePanel!!, BorderLayout.CENTER)
                 }
-                reasoningHeaderButton?.text = "Reasoning${if (reasoning.isInProgress) "..." else ""}"
+                reasoningMessagePanel?.update(reasoning)
+                if (reasoning.isInProgress) {
+                    if (reasoningStartTimeMs == 0L) {
+                        reasoningStartTimeMs = System.currentTimeMillis()
+                    }
+                    startReasoningDots()
+                } else {
+                    stopReasoningDots()
+                    if (reasoningStartTimeMs != 0L) {
+                        val duration = System.currentTimeMillis() - reasoningStartTimeMs
+                        reasoningHeaderButton?.text = "Reasoned for ${formatDuration(duration)}"
+                        reasoningStartTimeMs = 0L
+                    }
+                }
                 isReasoningExpanded = reasoning.isInProgress
             } else if (!hasReasoningContent) {
                 reasoningPanel?.isVisible = false
@@ -248,8 +318,7 @@ class MessagePanel(
                 if (i == newParsedContent.lastIndex && isUpdatableParsedContent(old, new)) {
                     when (old) {
                         is Content -> {
-                            val component = getComponent(componentCount - 1)
-                            val editorPane = when (component) {
+                            val editorPane = when (val component = getComponent(componentCount - 1)) {
                                 is JEditorPane -> component
                                 is JBScrollPane if component.viewport.view is JEditorPane -> component.viewport.view as JEditorPane
                                 else -> throw IllegalStateException(
@@ -366,11 +435,10 @@ class MessagePanel(
                 }
             }
             reasoningHeaderButton = headerButton
-
             outerPanel.add(headerButton, BorderLayout.NORTH)
             outerPanel.add(contentPanel, BorderLayout.CENTER)
 
-            reasoningMessagePanel = MessagePanel(Message.fromAssistant(""), project, true, isTestMode).apply {
+            reasoningMessagePanel = ReasoningMessagePanel().apply {
                 background = outerPanel.background
                 border = BorderFactory.createEmptyBorder(0, 15, 0, 10)
             }
@@ -425,40 +493,7 @@ class MessagePanel(
     }
 
     private fun addNonCodeContent(markdown: String) {
-        val globalScheme = EditorColorsManager.getInstance().globalScheme
-        val functionDeclaration = TextAttributesKey.createTextAttributesKey("DEFAULT_FUNCTION_DECLARATION")
-        val codeColor =
-            globalScheme.getAttributes(functionDeclaration).foregroundColor ?: globalScheme.defaultForeground
-        val outerPanelBackground = background
-        val editorPane = JEditorPane().apply {
-            editorKit = HTMLEditorKitBuilder.simple().apply {
-                styleSheet.addRule(
-                    """
-                        p {
-                            margin: 4px 0;
-                        }
-                        ul, ol {
-                            margin-top: 4px;
-                            margin-bottom: 8px;
-                        }
-                        h1, h2, h3, h4, h5, h6 {
-                            margin-top: 8px;
-                            margin-bottom: 0;
-                        }
-                        code {
-                            background-color: rgb(${outerPanelBackground.red}, ${outerPanelBackground.green}, ${outerPanelBackground.blue});
-                            color: rgb(${codeColor.red}, ${codeColor.green}, ${codeColor.blue});
-                            font-size: 0.9em;
-                        }
-                    """.trimIndent()
-                )
-            }
-            text = markdownToHtml(markdown)
-            isEditable = false
-            background = outerPanelBackground
-            border = BorderFactory.createEmptyBorder(0, 0, 0, 0)
-        }
-        add(editorPane)
+        add(EditorPaneHelper.createMarkdownPane(markdown, background))
     }
 
     private fun addHighlightedCode(languageId: String, code: String) {
