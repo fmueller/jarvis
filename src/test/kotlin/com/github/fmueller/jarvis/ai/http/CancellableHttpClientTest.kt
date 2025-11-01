@@ -2,6 +2,7 @@ package com.github.fmueller.jarvis.ai.http
 
 import junit.framework.TestCase
 import okhttp3.Call
+import kotlin.reflect.KClass
 
 class CancellableHttpClientTest : TestCase() {
 
@@ -41,19 +42,35 @@ class CancellableHttpClientTest : TestCase() {
     private fun createMockCall(): Call {
         return object : Call {
             private var canceled = false
-            
+            private val tags = mutableMapOf<Any, Any>()
+
             override fun cancel() {
                 canceled = true
             }
-            
+
             override fun isCanceled(): Boolean = canceled
-            
+
             override fun request() = throw UnsupportedOperationException("Not needed for test")
             override fun execute() = throw UnsupportedOperationException("Not needed for test")
-            override fun enqueue(responseCallback: okhttp3.Callback) = throw UnsupportedOperationException("Not needed for test")
+            override fun enqueue(responseCallback: okhttp3.Callback) =
+                throw UnsupportedOperationException("Not needed for test")
             override fun isExecuted(): Boolean = throw UnsupportedOperationException("Not needed for test")
             override fun timeout() = throw UnsupportedOperationException("Not needed for test")
             override fun clone(): Call = throw UnsupportedOperationException("Not needed for test")
+
+            override fun <T : Any> tag(type: KClass<T>): T? = tags[type] as? T
+
+            override fun <T> tag(type: Class<out T>): T? = tags[type] as? T
+
+            override fun <T : Any> tag(type: KClass<T>, computeIfAbsent: () -> T): T {
+                @Suppress("UNCHECKED_CAST")
+                return tags.getOrPut(type) { computeIfAbsent() } as T
+            }
+
+            override fun <T : Any> tag(type: Class<T>, computeIfAbsent: () -> T): T {
+                @Suppress("UNCHECKED_CAST")
+                return tags.getOrPut(type) { computeIfAbsent() } as T
+            }
         }
     }
 }
