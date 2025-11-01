@@ -9,16 +9,15 @@ import dev.langchain4j.http.client.sse.ServerSentEventParser
 import junit.framework.TestCase
 import okhttp3.Call
 import okhttp3.Callback
-import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
-import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
+import kotlin.reflect.KClass
 
 class OkHttpClientAdapterTest : TestCase() {
 
@@ -175,20 +174,20 @@ class OkHttpClientAdapterTest : TestCase() {
         override fun newCall(request: Request): Call {
             return if (request.header("Accept") == "text/event-stream") {
                 lastSseRequest = request
-                MockCall(this, request, nextSseResponse)
+                MockCall(request, nextSseResponse)
             } else {
                 lastRequest = request
-                MockCall(this, request, nextResponse)
+                MockCall(request, nextResponse)
             }
         }
 
         inner class MockCall(
-            private val client: MockOkHttpClient,
             private val request: Request,
             private val response: Response?
         ) : Call {
             private var canceled = false
             private var executed = false
+            private val tags = mutableMapOf<Any, Any>()
 
             init {
                 lastCall = this
@@ -230,7 +229,21 @@ class OkHttpClientAdapterTest : TestCase() {
             override fun isExecuted(): Boolean = executed
             override fun request(): Request = request
             override fun timeout() = throw UnsupportedOperationException("Not needed for test")
-            override fun clone(): Call = MockCall(client, request, response)
+            override fun clone(): Call = MockCall(request, response)
+
+            override fun <T : Any> tag(type: KClass<T>): T? = tags[type] as? T
+
+            override fun <T> tag(type: Class<out T>): T? = tags[type] as? T
+
+            override fun <T : Any> tag(type: KClass<T>, computeIfAbsent: () -> T): T {
+                @Suppress("UNCHECKED_CAST")
+                return tags.getOrPut(type) { computeIfAbsent() } as T
+            }
+
+            override fun <T : Any> tag(type: Class<T>, computeIfAbsent: () -> T): T {
+                @Suppress("UNCHECKED_CAST")
+                return tags.getOrPut(type) { computeIfAbsent() } as T
+            }
         }
     }
 
