@@ -338,4 +338,19 @@ class ConversationPanelTest : BasePlatformTestCase() {
         assertTrue("Panel should have same number of components after an empty update",
             newCount == initialCount)
     }
+
+    fun `test scroll position remains during message generation`() {
+        val longText = (1..100).joinToString("\n") { "Line $it" }
+        val scrollBar = conversationPanel.scrollableContainer.verticalScrollBar
+        val initialValue = scrollBar.value
+
+        conversation.addToMessageBeingGenerated(longText)
+        waitForEDT()
+
+        assertEquals(
+            "Scroll position should remain unchanged during streaming",
+            initialValue,
+            scrollBar.value
+        )
+    }
 }
