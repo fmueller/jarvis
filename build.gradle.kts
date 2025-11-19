@@ -30,7 +30,7 @@ dependencies {
     implementation(libs.flexmark)
     implementation("dev.langchain4j:langchain4j:1.8.0")
     implementation("dev.langchain4j:langchain4j-ollama:1.8.0")
-    implementation("com.squareup.okhttp3:okhttp:5.3.1")
+    implementation("com.squareup.okhttp3:okhttp:5.3.2")
 
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
