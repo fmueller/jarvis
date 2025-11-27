@@ -585,4 +585,11 @@ object OllamaService {
     private fun cancelCurrentRequest() {
         currentInferenceClient?.cancel()
     }
+
+    @VisibleForTesting
+    fun configuredChatMemoryMaxTokens(): Int {
+        // Chat memory is built with TokenWindowChatMemory.builder().maxTokens(contextWindowSize, SimpleTokenizer())
+        // We expose the configured limit for tests to avoid brittle reflection into third-party internals.
+        return contextWindowSize
+    }
 }
