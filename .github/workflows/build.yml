@@ -36,6 +36,16 @@ jobs:
       pluginVerifierHomeDir: ${{ steps.properties.outputs.pluginVerifierHomeDir }}
     steps:
 
+      # Free GitHub Actions Environment Disk Space
+      - name: Maximize Build Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: true
+          android: true
+          dotnet: true
+          docker-images: true
+
       # Check out the current repository
       - name: Fetch Sources
         uses: actions/checkout@v6
@@ -100,6 +110,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+      # Free GitHub Actions Environment Disk Space
+      - name: Maximize Build Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: true
+          android: true
+          dotnet: true
+          docker-images: true
+
       # Check out the current repository
       - name: Fetch Sources
         uses: actions/checkout@v6
@@ -153,8 +173,11 @@ jobs:
       - name: Maximize Build Space
         uses: jlumbroso/free-disk-space@main
         with:
-          tool-cache: false
-          large-packages: false
+          tool-cache: true
+          large-packages: true
+          android: true
+          dotnet: true
+          docker-images: true
 
       # Check out the current repository
       - name: Fetch Sources
