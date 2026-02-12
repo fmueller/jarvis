@@ -5,8 +5,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.components.JBScrollPane
 import org.jdesktop.swingx.VerticalLayout
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
@@ -30,31 +28,21 @@ class ConversationPanel(conversation: Conversation, private val project: Project
     init {
         Disposer.register(conversation, this)
 
-        var isUserScrolling = false
-
-        scrollableContainer.verticalScrollBar.addAdjustmentListener { e ->
-            if (!isUserScrolling) {
-                e.adjustable.value = e.adjustable.maximum
-            }
-        }
-
-        scrollableContainer.addMouseListener(object : MouseAdapter() {
-            override fun mousePressed(e: MouseEvent?) {
-                isUserScrolling = true
-            }
-        })
-
-        scrollableContainer.addMouseWheelListener {
-            isUserScrolling = true
-        }
-
         conversation.addPropertyChangeListener {
             if (it.propertyName == "messages") {
                 SwingUtilities.invokeLater {
-                    isUserScrolling = false
+                    val scrollBar = scrollableContainer.verticalScrollBar
+                    val shouldAutoScroll =
+                        !scrollBar.valueIsAdjusting &&
+                        scrollBar.value + scrollBar.visibleAmount >= scrollBar.maximum
+
+                    scrollBar.valueIsAdjusting = false
                     val newMessages = (it.newValue as? List<*>)?.filterIsInstance<Message>()
                         ?: throw IllegalStateException("Property 'messages' must be a list of messages")
                     updateSmooth(newMessages)
+                    if (shouldAutoScroll) {
+                        scrollBar.value = scrollBar.maximum
+                    }
                 }
             }
         }
@@ -62,8 +50,18 @@ class ConversationPanel(conversation: Conversation, private val project: Project
         conversation.addPropertyChangeListener {
             if (it.propertyName == "messageBeingGenerated") {
                 SwingUtilities.invokeLater {
-                    isUserScrolling = false
+                    val scrollBar = scrollableContainer.verticalScrollBar
+                    val shouldAutoScroll =
+                        !scrollBar.valueIsAdjusting &&
+                        scrollBar.value + scrollBar.visibleAmount >= scrollBar.maximum
+
+                    if (updatePanel == null) {
+                        scrollBar.valueIsAdjusting = true
+                    }
                     updateMessageInProgress(it.newValue as String)
+                    if (shouldAutoScroll) {
+                        scrollBar.value = scrollBar.maximum
+                    }
                 }
             }
         }
