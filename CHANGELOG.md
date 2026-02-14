@@ -6,6 +6,7 @@
 
 - Remove caches for closed pull requests in CI
 - Configurable context window size when calling Ollama
+- Animated reasoning panel with wave-animated title, fading paragraphs, and duration label
 - `/model` shows model info when no name is supplied and new `/model-info` command
 - `/model set` command to configure inference parameters
 - Keep the current Ollama model in memory for five minutes
